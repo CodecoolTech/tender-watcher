@@ -28,7 +28,13 @@ SOURCES = [
     "HILMA / hankintailmoitukset.fi (finn közbeszerzés) – pl. Business Finland, EDUFI képzési tenderek",
 ]
 
-# --- Modell / futtatás ------------------------------------------------------
-MODEL = "claude-sonnet-5"          # jó ár/érték; igény szerint erősebb modellre cserélhető
-MAX_WEB_SEARCHES = 12              # hány web-keresést engedünk egy futásban (költségkorlát)
-MIN_RELEVANCE = "med"             # "low" | "med" | "high" – ez alatti relevanciát nem jelentünk push-ban
+# --- OpenRouter / modell / futtatás -----------------------------------------
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+MODEL = "anthropic/claude-sonnet-5"   # jó ár/érték; erősebbhez pl. "anthropic/claude-opus-4.5"
+
+# Web-keresés (openrouter:web_search szervertool) beállításai:
+MAX_RESULTS_PER_SEARCH = 5     # egy keresés max. találata (Exa-motor); 1–25
+MAX_TOTAL_RESULTS = 25         # összes találat felső korlátja egy futásban (költség-/kontextuskorlát)
+
+MIN_RELEVANCE = "med"          # "low" | "med" | "high" – ez alatti relevanciát nem jelentünk push-ban

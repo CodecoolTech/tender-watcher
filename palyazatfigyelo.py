@@ -3,16 +3,17 @@
 Codecool Pályázatfigyelő – felhős heti futás.
 
 Mit csinál egy futáskor:
-  1. A Claude API-t hívja beépített web-search eszközzel; átfésüli a forrásportálokat
-     és célzottan felderít EU-s cégoldalakat releváns, nyitott pályázatokért/tenderekért.
+  1. OpenRouteren keresztül hívja a modellt (Anthropic Claude) az openrouter:web_search
+     szervertoollal; átfésüli a forrásportálokat és célzottan felderít EU-s cégoldalakat
+     releváns, nyitott pályázatokért/tenderekért.
   2. A modell strukturált JSON-t ad vissza a találatokról.
   3. Deduplikál a state/seen.json alapján -> megjelöli az ÚJ tételeket.
   4. Frissíti a dashboard adatát (docs/data.json) és ír egy digestet (digests/…md).
   5. E-mailt és/vagy Slack-üzenetet küld, ha van új találat.
 
 Környezeti változók (GitHub Actions secrets):
-  ANTHROPIC_API_KEY            – kötelező
-  SLACK_WEBHOOK_URL            – opcionális (Slack incoming webhook)
+  OPENROUTER_API_KEY          – kötelező
+  SLACK_WEBHOOK_URL           – opcionális (Slack incoming webhook)
   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM, EMAIL_TO – opcionális (e-mail)
 """
 
@@ -26,7 +27,6 @@ from email.mime.text import MIMEText
 from pathlib import Path
 
 import requests
-import anthropic
 
 import config
 
@@ -41,7 +41,7 @@ REL_ORDER = {"high": 0, "med": 1, "low": 2}
 
 
 # --------------------------------------------------------------------------- #
-# 1. Keresés a Claude API-val (web search eszközzel)
+# 1. Keresés OpenRouteren keresztül (openrouter:web_search szervertool)
 # --------------------------------------------------------------------------- #
 def build_prompt() -> str:
     sources = "\n".join(f"  - {s}" for s in config.SOURCES)
@@ -51,8 +51,9 @@ def build_prompt() -> str:
 CÉGPROFIL:
 {config.COMPANY_PROFILE}
 
-Használd a web_search eszközt, és fésüld át a következő megbízható forrásokat friss
-(nyitott vagy hamarosan nyíló) kiírásokért – pályázatok, támogatások, közbeszerzések, tenderek:
+Használd a web-search eszközt (több keresést is indíthatsz), és fésüld át a következő
+megbízható forrásokat friss (nyitott vagy hamarosan nyíló) kiírásokért – pályázatok,
+támogatások, közbeszerzések, tenderek:
 {sources}
 
 Ezen felül végezz CÉLZOTT felderítést EU-s cégek / ügynökségek saját tender-, "procurement"-,
@@ -61,7 +62,6 @@ Ezen felül végezz CÉLZOTT felderítést EU-s cégek / ügynökségek saját t
 Szabályok:
   - Csak VALÓS, ellenőrzött találatokat adj meg valódi, működő linkkel. Ne találj ki kiírást.
   - Csak a cégprofilhoz releváns tételeket tartsd meg.
-  - Legfeljebb {config.MAX_WEB_SEARCHES} keresést végezz.
 
 A válaszod VÉGÉN adj vissza KIZÁRÓLAG egy JSON-tömböt (```json blokkban), ilyen mezőkkel:
 [
@@ -80,21 +80,41 @@ A válaszod VÉGÉN adj vissza KIZÁRÓLAG egy JSON-tömböt (```json blokkban),
 Csak a JSON-tömböt add a záró blokkban, más szöveget ne tegyél utána."""
 
 
-def fetch_opportunities(client: anthropic.Anthropic) -> list[dict]:
-    resp = client.messages.create(
-        model=config.MODEL,
-        max_tokens=8000,
-        tools=[{
-            "type": "web_search_20250305",
-            "name": "web_search",
-            "max_uses": config.MAX_WEB_SEARCHES,
+def fetch_opportunities(api_key: str) -> list[dict]:
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/codecool/palyazatfigyelo",
+        "X-Title": "Codecool Palyazatfigyelo",
+    }
+    body = {
+        "model": config.MODEL,
+        "messages": [{"role": "user", "content": build_prompt()}],
+        "max_tokens": 8000,
+        "tools": [{
+            "type": "openrouter:web_search",
+            "parameters": {
+                "max_results": config.MAX_RESULTS_PER_SEARCH,
+                "max_total_results": config.MAX_TOTAL_RESULTS,
+            },
         }],
-        messages=[{"role": "user", "content": build_prompt()}],
+    }
+    resp = requests.post(
+        f"{config.OPENROUTER_BASE_URL}/chat/completions",
+        headers=headers,
+        json=body,
+        timeout=600,
     )
-    # Összefűzzük a szöveges blokkokat, kinyerjük az utolsó JSON-tömböt.
-    text = "".join(
-        block.text for block in resp.content if getattr(block, "type", "") == "text"
-    )
+    resp.raise_for_status()
+    data = resp.json()
+    try:
+        content = data["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as exc:
+        raise SystemExit(f"Váratlan OpenRouter-válasz: {json.dumps(data)[:800]}") from exc
+    if isinstance(content, list):
+        text = "".join(part.get("text", "") for part in content if isinstance(part, dict))
+    else:
+        text = content or ""
     return parse_json_array(text)
 
 
@@ -224,12 +244,11 @@ def notify_email(new_items: list[dict], digest_path: Path) -> None:
 
 # --------------------------------------------------------------------------- #
 def main() -> None:
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
-        raise SystemExit("Hiányzik az ANTHROPIC_API_KEY környezeti változó.")
-    client = anthropic.Anthropic(api_key=api_key)
+        raise SystemExit("Hiányzik az OPENROUTER_API_KEY környezeti változó.")
 
-    items = fetch_opportunities(client)
+    items = fetch_opportunities(api_key)
     if not items:
         print("Nincs feldolgozható találat (üres vagy hibás JSON).")
     seen = load_seen()

@@ -4,8 +4,11 @@ Heti automata, ami az interneten releváns pályázatokat, támogatásokat, köz
 és tendereket keres a Codecool számára (EU + magyar források + EU-s cégoldalak, pl. finn),
 majd e-mailben és/vagy Slackben értesít, és egy webes dashboardon is megjeleníti a találatokat.
 
-Nem kell felconfigurálni a figyelt honlapokat – a Claude API a cégprofil és a forrásportálok
+Nem kell felconfigurálni a figyelt honlapokat – a modell a cégprofil és a forrásportálok
 alapján magától keres, és célzottan felderít cégoldalakat is.
+
+Az AI-hívás **OpenRouteren** keresztül megy, Anthropic
+Claude modellel. A web-keresést az OpenRouter `openrouter:web_search` szervertoolja végzi.
 
 ## Mit tartalmaz
 
@@ -31,7 +34,7 @@ Kötelező:
 
 | Secret neve | Érték |
 |---|---|
-| `ANTHROPIC_API_KEY` | Anthropic API-kulcs (console.anthropic.com) |
+| `OPENROUTER_API_KEY` | OpenRouter API-kulcs (openrouter.ai/keys) |
 
 Slack értesítéshez:
 
@@ -69,11 +72,14 @@ Ezután minden **hétfő reggel** magától fut.
 - **Ütemezés:** `.github/workflows/palyazatfigyelo.yml` → `cron`. A cron UTC-ben van!
   Hétfő 08:00 Budapest ≈ `0 6 * * 1` (nyári idő). Napi futáshoz: `0 6 * * *`.
 - **Mit jelentsen push-ban:** `config.py` → `MIN_RELEVANCE` (`high` = csak a legjobbak).
-- **Modell/költség:** `config.py` → `MODEL`, `MAX_WEB_SEARCHES`.
+- **Modell:** `config.py` → `MODEL`. OpenRouter-slug, Anthropic modellhez `anthropic/` prefix
+  (pl. `anthropic/claude-sonnet-5`, erősebbhez `anthropic/claude-opus-4.5`).
+- **Web-keresés / költség:** `config.py` → `MAX_RESULTS_PER_SEARCH`, `MAX_TOTAL_RESULTS`.
 
 ## Költség
-Futásonként pár száz forintnyi API- és web-search-díj (a keresések számától függ).
-A GitHub Actions és a Pages a szokásos használatnál ingyenes.
+A díj az OpenRouter-egyenlegből megy: a modell token-díja + a web-keresés
+(Exa-motor kb. $4 / 1000 találat, azaz alapból max. ~$0,02 keresésenként).
+Futásonként jellemzően pár száz forint. A GitHub Actions és a Pages a szokásos használatnál ingyenes.
 
 ## Korlátok, őszintén
 - A hivatalos portálok lefedettsége megbízható; a cégoldal-felderítés „best effort", nem teljes.
