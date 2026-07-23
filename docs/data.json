@@ -1,4 +1,70 @@
 {
-  "updated": "",
-  "items": []
+  "updated": "2026-07-23",
+  "items": [
+    {
+      "title": "DIGITAL-2026-SKILLS-10 – Advanced Digital Skills (10. felhívás-csomag, 3 altéma)",
+      "url": "https://digital-skills-jobs.europa.eu/en/latest/news/eu-launches-new-set-open-calls-under-digital-boost-advanced-digital-skills",
+      "category": "eu",
+      "program": "Digital Europe Programme (DIGITAL)",
+      "budget": "12,5 millió EUR (a teljes call-csomagra)",
+      "deadline": "2026-10-01",
+      "deadline_text": "2026. október 1., 17:00 CEST",
+      "relevance": "high",
+      "summary": "Advanced digital skills / AI képzési programok finanszírozása felsőoktatási, képzési szervezetek és ipar közös konzorciumainak – Codecool releváns partnerként/konzorciumi tagként pályázhat.",
+      "is_new": true,
+      "first_seen": "2026-07-23"
+    },
+    {
+      "title": "DIGITAL-2026-SKILLS-10-NATIONAL-COALITIONS – Digitális Készségek nemzeti koalíciók erősítése",
+      "url": "https://hadea.ec.europa.eu/news/new-calls-proposals-under-digital-europe-programme-published-2026-04-10_en",
+      "category": "eu",
+      "program": "Digital Europe Programme (DIGITAL)",
+      "budget": "Cascade-finanszírozás max. 150 000 EUR/szervezet",
+      "deadline": "2026-10-01",
+      "deadline_text": "2026. október 1.",
+      "relevance": "high",
+      "summary": "A Digital Skills and Jobs Platform nemzeti koalícióinak bővítésére szolgáló cascade-finanszírozás, amelyben a Codecool mint KKV/edtech szereplő is részesülhet.",
+      "is_new": true,
+      "first_seen": "2026-07-23"
+    },
+    {
+      "title": "Erasmus+ Centres of Vocational Excellence (CoVE) 2026 call",
+      "url": "https://employment-social-affairs.ec.europa.eu/news/new-publications-spotlight-erasmus-centres-vocational-excellence-2026-03-10_en",
+      "category": "eu",
+      "program": "Erasmus+ (EACEA)",
+      "budget": "68 millió EUR",
+      "deadline": "2026-09-03",
+      "deadline_text": "2026. szeptember 3.",
+      "relevance": "high",
+      "summary": "Szakképzési (VET) kiválósági központok nemzetközi hálózatainak finanszírozása – közvetlenül illik a Codecool coding bootcamp / VET profiljához, konzorciumi partnerségre kiváló lehetőség.",
+      "is_new": true,
+      "first_seen": "2026-07-23"
+    },
+    {
+      "title": "DIMOP Plusz 1.2.6/C-26 – KKV digitális infrastruktúra és transzformáció",
+      "url": "https://www.palyazat.gov.hu/",
+      "category": "hu",
+      "program": "Széchenyi Terv Plusz / DIMOP Plusz",
+      "budget": "3-12 millió Ft/vállalkozás",
+      "deadline": "2026-06-30",
+      "deadline_text": "2026. május 5. – június 30. (forráskimerülésig)",
+      "relevance": "low",
+      "summary": "Elsősorban weboldal-, szoftver- és eszközbeszerzésre irányuló KKV-támogatás, nem képzési célú, csak közvetve kapcsolódik a Codecool profiljához (pl. saját digitalizáció).",
+      "is_new": true,
+      "first_seen": "2026-07-23"
+    },
+    {
+      "title": "DIGITAL-2026-BESTUSE-10 – Accelerating Best Use of Technologies",
+      "url": "https://hadea.ec.europa.eu/news/new-calls-proposals-under-digital-europe-programme-published-2026-04-10_en",
+      "category": "eu",
+      "program": "Digital Europe Programme (DIGITAL)",
+      "budget": "",
+      "deadline": "2026-10-01",
+      "deadline_text": "2026. október 1.",
+      "relevance": "med",
+      "summary": "A digitális technológiák (pl. AI, EdTech eszközök) gyors elterjedését célzó felhívás – közvetetten releváns Codecool EdTech-megoldásaihoz.",
+      "is_new": false,
+      "first_seen": "2026-07-23"
+    }
+  ]
 }
