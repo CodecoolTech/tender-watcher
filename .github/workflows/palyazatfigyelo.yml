@@ -1,0 +1,46 @@
+name: Palyazatfigyelo
+
+# Heti futás: hétfő 06:00 UTC = 08:00 Budapest (nyári idő, CEST).
+# Télen (CET, UTC+1) ez 07:00 Budapest lesz. A "workflow_dispatch" kézi indítást is enged.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write   # kell, hogy a frissített dashboard + state visszakerüljön a repóba
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pályázatfigyelő
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python palyazatfigyelo.py
+
+      - name: Commit frissített adatok
+        run: |
+          git config user.name "palyazatfigyelo-bot"
+          git config user.email "actions@github.com"
+          git add docs/data.json state/seen.json digests/ || true
+          git commit -m "Heti pályázatfigyelő frissítés ($(date -u +%Y-%m-%d))" || echo "Nincs változás."
+          git push || echo "Push kihagyva."
