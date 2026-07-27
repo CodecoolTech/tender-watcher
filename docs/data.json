@@ -1,4 +1,70 @@
 {
   "updated": "2026-07-27",
-  "items": []
+  "items": [
+    {
+      "title": "Erasmus+ Centres of Vocational Excellence (CoVE) – ERASMUS-EDU-2026-PEX-COVE",
+      "url": "https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details/ERASMUS-EDU-2026-PEX-COVE",
+      "category": "eu",
+      "program": "Erasmus+ / EACEA",
+      "budget": "68 millió EUR keret, max. 4 millió EUR/projekt",
+      "deadline": "2026-09-03",
+      "deadline_text": "2026. szeptember 3. 17:00 (brüsszeli idő)",
+      "relevance": "high",
+      "summary": "Kiváló VET-illeszkedés: nagy európai konzorciumi partnerségek a szakképzés minőségének fejlesztésére, amiben a Codecool mint IT-képző/VET-szolgáltató partnerként vagy koordinátorként részt vehet.",
+      "is_new": true,
+      "first_seen": "2026-07-27"
+    },
+    {
+      "title": "Valmennuspalvelut DIGI – Business Finland digitális transzformációs képzési közbeszerzés",
+      "url": "https://fi.openprocurements.com/buyer/business-finland-oy/",
+      "category": "tender",
+      "program": "Business Finland Oy (finn közbeszerzés / Hilma)",
+      "budget": "",
+      "deadline": "2026-08-11",
+      "deadline_text": "Beadási határidő: 2026. augusztus 11.",
+      "relevance": "high",
+      "summary": "Finn állami digitális transzformációs és technológiai valmennus (coaching/training) beszerzés – releváns a Codecool északi piaci EdTech/upskilling szolgáltatásaihoz.",
+      "is_new": true,
+      "first_seen": "2026-07-27"
+    },
+    {
+      "title": "EUIPO – E-learning tartalomfejlesztés (Prior Information Notice)",
+      "url": "https://ted.europa.eu/en/notice/-/detail/121172-2026",
+      "category": "tender",
+      "program": "TED / EUIPO (Spanyolország)",
+      "budget": "700 000 EUR",
+      "deadline": "",
+      "deadline_text": "Előzetes tájékoztató (PIN) – a tényleges tender kiírása még nem jelent meg",
+      "relevance": "med",
+      "summary": "Végponttól végpontig e-learning tartalomfejlesztési beszerzés (storyboard, videó, szimuláció, kvíz) – jövőbeni tenderre lehet felkészülni, Codecool EdTech/e-learning kompetenciáival releváns.",
+      "is_new": true,
+      "first_seen": "2026-07-27"
+    },
+    {
+      "title": "DIGITAL-2026-SKILLS-10 – Advanced Digital Skills (incl. EDTECH topic)",
+      "url": "https://digital-skills-jobs.europa.eu/en/latest/news/eu-launches-new-set-open-calls-under-digital-boost-advanced-digital-skills",
+      "category": "eu",
+      "program": "Digital Europe Programme (HaDEA)",
+      "budget": "~12.5 millió EUR (teljes csomag, 3 topik)",
+      "deadline": "2026-10-01",
+      "deadline_text": "2026. október 1. 17:00 CEST",
+      "relevance": "high",
+      "summary": "Az EDTECH és AI-in-education fókuszú topikok közvetlenül a Codecool programozás- és digitáliskészség-oktatási profiljába illenek; konzorciumi partnerségi lehetőség felsőoktatási/képzési szervezetekkel.",
+      "is_new": false,
+      "first_seen": "2026-07-23"
+    },
+    {
+      "title": "Jotpa – Hankeavustus digitaalisten perustaitojen vahvistamiseen",
+      "url": "https://www.jotpa.fi/fi/rahoitus/valtionavustukset/hankeavustus-digitaalisten-perustaitojen-vahvistamiseen-ja",
+      "category": "company",
+      "program": "Jotpa (Jatkuvan oppimisen ja työllisyyden palvelukeskus, Finnország)",
+      "budget": "~3 millió EUR",
+      "deadline": "",
+      "deadline_text": "Nincs pontosan megadott következő beadási határidő – érdemes közvetlenül a Jotpa oldalán ellenőrizni",
+      "relevance": "med",
+      "summary": "Finn állami támogatás rövid, hozzáférhető digitális alapkészség-képzésekre kevésbé aktív munkavállalók számára – releváns a Codecool upskilling/reskilling tevékenységéhez az északi piacon.",
+      "is_new": false,
+      "first_seen": "2026-07-24"
+    }
+  ]
 }
