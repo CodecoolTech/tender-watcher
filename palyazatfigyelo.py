@@ -44,31 +44,41 @@ REL_ORDER = {"high": 0, "med": 1, "low": 2}
 # 1. Keresés OpenRouteren keresztül (openrouter:web_search szervertool)
 # --------------------------------------------------------------------------- #
 def build_prompt() -> str:
-    sources = "\n".join(f"  - {s}" for s in config.SOURCES)
+    segments = "\n".join(f"  {n}. {s}" for n, s in enumerate(config.SEARCH_SEGMENTS, 1))
     today = dt.date.today().isoformat()
-    return f"""Ma {today} van. Te a Codecool pályázatfigyelője vagy.
+    return f"""Ma {today} van. Te a Codecool pályázat- és tenderfigyelője vagy.
 
 CÉGPROFIL:
 {config.COMPANY_PROFILE}
 
-Használd a web-search eszközt (több keresést is indíthatsz), és fésüld át a következő
-megbízható forrásokat friss (nyitott vagy hamarosan nyíló) kiírásokért – pályázatok,
-támogatások, közbeszerzések, tenderek:
-{sources}
+FELADAT: fésüld át a TELJES európai piacot friss (nyitott vagy hamarosan nyíló)
+lehetőségekért. NEM csak EU-s pályázatok érdekesek – ugyanolyan súllyal keresd a
+közbeszerzéseket (állami, városi/önkormányzati) és a magáncégek beszerzési tendereit is.
 
-Ezen felül végezz CÉLZOTT felderítést EU-s cégek / ügynökségek saját tender-, "procurement"-,
-"hankinnat"-oldalain (nem kell előre megadott lista – keresd meg magad, kiemelten a finn / északi piacon).
+Használd a web-search eszközt (indíts több, különböző nyelvű és irányú keresést), és
+fedd le MINDEGYIK alábbi szegmenst. A zárójeles portálnevek csak PÉLDÁK a kiinduláshoz –
+NE korlátozd rájuk a keresést, minden szegmensben derítsd fel magad a további forrásokat:
+{segments}
+
+Keresési tippek:
+  - Keress helyi nyelveken is, pl.: "tarjouspyyntö koulutus", "Ausschreibung IT-Schulung",
+    "appel d'offres formation numérique", "przetarg szkolenia IT", "διαγωνισμός κατάρτιση",
+    "upphandling utbildning", "aanbesteding opleiding", "IT training tender".
+  - Nézd meg nagyvállalatok "suppliers" / "procurement" / "tenders" aloldalait is.
+  - Városi és regionális beszerzési oldalak, egyetemek, munkaügyi szervezetek is számítanak.
 
 Szabályok:
   - Csak VALÓS, ellenőrzött találatokat adj meg valódi, működő linkkel. Ne találj ki kiírást.
   - Csak a cégprofilhoz releváns tételeket tartsd meg.
+  - Törekedj arra, hogy a találatok több országból és több szegmensből (pályázat,
+    közbeszerzés, céges tender) származzanak, ne csak egy-két portálról.
 
 A válaszod VÉGÉN adj vissza KIZÁRÓLAG egy JSON-tömböt (```json blokkban), ilyen mezőkkel:
 [
   {{
     "title": "…",
     "url": "https://…",
-    "category": "eu" | "hu" | "tender" | "company",
+    "category": "eu" | "hu" | "tender" | "company",  // eu = EU-s pályázat, hu = magyar pályázat, tender = közbeszerzés (állami/városi), company = céges/magánszektor tender
     "program": "forrás/program neve",
     "budget": "becsült keret vagy '' ",
     "deadline": "ÉÉÉÉ-HH-NN vagy '' ha nincs pontos",
