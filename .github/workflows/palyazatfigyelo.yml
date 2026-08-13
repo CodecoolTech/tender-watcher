@@ -41,6 +41,6 @@ jobs:
         run: |
           git config user.name "palyazatfigyelo-bot"
           git config user.email "actions@github.com"
-          git add docs/data.json state/seen.json digests/ || true
+          git add docs/ state/ digests/ || true
           git commit -m "Heti pályázatfigyelő frissítés ($(date -u +%Y-%m-%d))" || echo "Nincs változás."
           git push || echo "Push kihagyva."

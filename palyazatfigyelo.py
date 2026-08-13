@@ -36,6 +36,7 @@ DOCS_DIR = ROOT / "docs"
 DIGEST_DIR = ROOT / "digests"
 SEEN_FILE = STATE_DIR / "seen.json"
 DATA_FILE = DOCS_DIR / "data.json"
+ARCHIVE_FILE = DOCS_DIR / "archive.json"
 
 REL_ORDER = {"high": 0, "med": 1, "low": 2}
 
@@ -55,8 +56,10 @@ FELADAT: fésüld át a TELJES európai piacot friss (nyitott vagy hamarosan ny�
 lehetőségekért. NEM csak EU-s pályázatok érdekesek – ugyanolyan súllyal keresd a
 közbeszerzéseket (állami, városi/önkormányzati) és a magáncégek beszerzési tendereit is.
 
-Használd a web-search eszközt (indíts több, különböző nyelvű és irányú keresést), és
-fedd le MINDEGYIK alábbi szegmenst. A zárójeles portálnevek csak PÉLDÁK a kiinduláshoz –
+Használd a web-search eszközt: összesen kb. {config.MAX_SEARCHES} keresést futtathatsz,
+oszd be úgy, hogy MINDEGYIK alábbi szegmensre jusson (különböző nyelvű és irányú keresések).
+A céges/magánszektor szegmensre fordíts LEGALÁBB 3 keresést – ez a legnehezebben
+megtalálható, de kiemelten fontos kategória. A zárójeles portálnevek csak PÉLDÁK a kiinduláshoz –
 NE korlátozd rájuk a keresést, minden szegmensben derítsd fel magad a további forrásokat:
 {segments}
 
@@ -64,12 +67,17 @@ Keresési tippek:
   - Keress helyi nyelveken is, pl.: "tarjouspyyntö koulutus", "Ausschreibung IT-Schulung",
     "appel d'offres formation numérique", "przetarg szkolenia IT", "διαγωνισμός κατάρτιση",
     "upphandling utbildning", "aanbesteding opleiding", "IT training tender".
-  - Nézd meg nagyvállalatok "suppliers" / "procurement" / "tenders" aloldalait is.
+  - Céges tenderekhez próbáld: "ajánlattételi felhívás képzés", "ajánlattételi felhívás oktatás",
+    "RFP IT training", "request for proposal training services", "invitation to tender training",
+    illetve nagyvállalatok "suppliers" / "procurement" / "hirdetmények" / "tenders" aloldalait.
   - Városi és regionális beszerzési oldalak, egyetemek, munkaügyi szervezetek is számítanak.
 
 Szabályok:
   - Csak VALÓS, ellenőrzött találatokat adj meg valódi, működő linkkel. Ne találj ki kiírást.
   - Csak a cégprofilhoz releváns tételeket tartsd meg.
+  - LEJÁRT határidejű kiírást ne vegyél fel – a mai dátumhoz ({today}) képest ellenőrizd.
+  - Az "url" mező a KONKRÉT kiírás oldalára mutasson, ne aggregátor keresőoldalra vagy
+    listaoldalra (ha csak listaoldal érhető el, azt add meg, de jelezd a summary-ben).
   - Törekedj arra, hogy a találatok több országból és több szegmensből (pályázat,
     közbeszerzés, céges tender) származzanak, ne csak egy-két portálról.
 
@@ -100,11 +108,12 @@ def fetch_opportunities(api_key: str) -> list[dict]:
     body = {
         "model": config.MODEL,
         "messages": [{"role": "user", "content": build_prompt()}],
-        "max_tokens": 8000,
+        "max_tokens": 16000,
         "tools": [{
             "type": "openrouter:web_search",
             "parameters": {
                 "max_results": config.MAX_RESULTS_PER_SEARCH,
+                "max_uses": config.MAX_SEARCHES,
                 "max_total_results": config.MAX_TOTAL_RESULTS,
             },
         }],
@@ -117,6 +126,7 @@ def fetch_opportunities(api_key: str) -> list[dict]:
     )
     resp.raise_for_status()
     data = resp.json()
+    log_search_debug(data)
     try:
         content = data["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as exc:
@@ -126,6 +136,37 @@ def fetch_opportunities(api_key: str) -> list[dict]:
     else:
         text = content or ""
     return parse_json_array(text)
+
+
+def log_search_debug(data: dict) -> None:
+    """A nyers API-választ elmenti (state/last_response.json), és kiírja a futási
+    logba, hogy hány web-keresés történt, milyen kereséseket indított a modell
+    (ha a válasz tartalmazza), és mely forrásokra hivatkozott."""
+    STATE_DIR.mkdir(exist_ok=True)
+    (STATE_DIR / "last_response.json").write_text(
+        json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    usage = data.get("usage") or {}
+    server_tools = usage.get("server_tool_use_details") or usage.get("server_tool_use") or {}
+    if server_tools:
+        print(f"Web-keresések száma ebben a futásban: {server_tools.get('web_search_requests', '?')}")
+    if usage.get("cost") is not None:
+        print(f"Futás költsége: ${usage['cost']:.4f}")
+
+    message = (data.get("choices") or [{}])[0].get("message") or {}
+    for call in message.get("tool_calls") or []:
+        fn = call.get("function") or {}
+        print(f"Tool-hívás: {fn.get('name', '?')} {fn.get('arguments', '')}")
+
+    urls = sorted({
+        a.get("url_citation", {}).get("url")
+        for a in message.get("annotations") or []
+        if isinstance(a, dict) and a.get("url_citation", {}).get("url")
+    })
+    if urls:
+        print(f"Hivatkozott források ({len(urls)}):")
+        for u in urls:
+            print(f"  - {u}")
 
 
 def parse_json_array(text: str) -> list[dict]:
@@ -185,6 +226,30 @@ def write_data_json(items: list[dict]) -> None:
         "items": items,
     }
     DATA_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def update_archive(items: list[dict]) -> None:
+    """Kumulatív archívum: minden valaha talált tétel megmarad (docs/archive.json),
+    first_seen / last_seen dátumokkal. A dashboard Archívum nézete ebből olvas."""
+    today = dt.date.today().isoformat()
+    archive: dict[str, dict] = {}
+    if ARCHIVE_FILE.exists():
+        for entry in json.loads(ARCHIVE_FILE.read_text(encoding="utf-8")).get("items", []):
+            archive[key_of(entry)] = entry
+    for it in items:
+        k = key_of(it)
+        old = archive.get(k, {})
+        entry = {f: it.get(f, "") for f in (
+            "title", "url", "category", "program", "budget",
+            "deadline", "deadline_text", "relevance", "summary")}
+        entry["first_seen"] = old.get("first_seen") or it.get("first_seen") or today
+        entry["last_seen"] = today
+        archive[k] = entry
+    payload = {
+        "updated": today,
+        "items": sorted(archive.values(), key=lambda e: (e["last_seen"], e["first_seen"]), reverse=True),
+    }
+    ARCHIVE_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def write_digest(items: list[dict]) -> Path:
@@ -266,6 +331,7 @@ def main() -> None:
     save_seen(seen)
 
     write_data_json(items)
+    update_archive(items)
     digest_path = write_digest(items)
 
     min_rank = REL_ORDER.get(config.MIN_RELEVANCE, 1)

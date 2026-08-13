@@ -17,7 +17,8 @@ Svájc. Minden típusú lehetőség érdekes: EU-s és nemzeti pályázatok, kö
 Releváns kulcsszavak: digital skills, advanced digital skills, reskilling, upskilling,
 vocational education and training (VET), programming / coding training, IT training,
 corporate training, e-learning, EdTech, AI in education, AI training, micro-credentials,
-felnőttképzés, informatikai képzés, digitális kompetencia.
+felnőttképzés, informatikai képzés, digitális kompetencia, ajánlattételi felhívás,
+request for proposal (RFP), invitation to tender, beszállítói pályázat.
 """
 
 # --- Keresési szegmensek -----------------------------------------------------
@@ -35,9 +36,13 @@ SEARCH_SEGMENTS = [
     "Városi / önkormányzati és közintézményi beszerzések – pl. Helsinki (hel.fi hankinnat), "
     "Bécs, Berlin, Amszterdam, Varsó, Budapest beszerzési oldalai, egyetemek, kamarák, "
     "munkaügyi hivatalok (pl. arbetsförmedlingen, Bundesagentur für Arbeit) képzési tenderei",
-    "Céges / magánszektor tenderek és beszerzési portálok – nagyvállalatok saját supplier/procurement "
-    "oldalai (pl. BASF, Siemens, Bosch, banki és telekom cégek beszállítói portáljai), ahol IT-képzést, "
-    "reskilling/upskilling programot, digital academy szolgáltatást keresnek beszállítótól",
+    "Céges / magánszektor tenderek – ezek gyakran 'ajánlattételi felhívás', 'RFP / request for proposal', "
+    "'invitation to tender', 'beszállítói pályázat', 'Ausschreibung' címen jelennek meg. Helyek: "
+    "nagyvállalatok saját supplier/procurement/hirdetmény oldalai (pl. bankok: UniCredit, Erste, OTP, "
+    "Raiffeisen; telekom: Magyar Telekom, Vodafone, Deutsche Telekom; ipar: BASF, Siemens, Bosch; "
+    "energetika: MOL, E.ON), publikus e-beszerzési platformok (SAP Ariba Discovery, Jaggaer, Coupa, "
+    "tendigo, Mercell privát szekciói), ahol IT-képzést, reskilling/upskilling programot, "
+    "digital academy szolgáltatást keresnek beszállítótól",
 ]
 
 # Visszafelé kompatibilitás (régi név)
@@ -50,7 +55,8 @@ MODEL = "anthropic/claude-sonnet-5"   # jó ár/érték; erősebbhez pl. "anthro
 
 # Web-keresés (openrouter:web_search szervertool) beállításai:
 MAX_RESULTS_PER_SEARCH = 5     # egy keresés max. találata (Exa-motor); 1–25
-MAX_TOTAL_RESULTS = 40         # összes találat felső korlátja egy futásban (költség-/kontextuskorlát)
-                               # 40 ≈ 8 keresés – kell a szélesebb piaci lefedettséghez; ha drága, vedd vissza 25-re
+MAX_SEARCHES = 12              # hány keresést indíthat a modell egy futásban (max_uses)
+MAX_TOTAL_RESULTS = 60         # összes találat felső korlátja egy futásban (költség-/kontextuskorlát)
+                               # 12 keresés × 5 találat – kell a teljes piaci lefedettséghez; ha drága, vedd vissza
 
 MIN_RELEVANCE = "med"          # "low" | "med" | "high" – ez alatti relevanciát nem jelentünk push-ban

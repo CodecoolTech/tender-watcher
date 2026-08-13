@@ -19,6 +19,7 @@
   .count { color:#888; font-size:12px; margin:0 0 12px; }
   .card { background:#fff; border:1px solid #e6e8ec; border-radius:12px; padding:16px 18px; margin-bottom:12px; }
   .card.new { border-color:#1c7a3e; box-shadow:0 0 0 1px #1c7a3e33; }
+  .card.inactive { opacity:.6; }
   .top { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
   .card h3 { font-size:15px; margin:0 0 6px; }
   .card h3 a { color:#12489a; text-decoration:none; }
@@ -40,6 +41,7 @@
   <h1>Codecool Pályázatfigyelő</h1>
   <div class="sub">EU + magyar pályázatok, közbeszerzések/tenderek és EU-s cégoldalak automatikus figyelése – digitális készségek, IT-oktatás, felnőtt- és szakképzés fókusszal.</div>
   <div class="updated" id="updated">Adatok betöltése…</div>
+  <div class="filters" id="views"></div>
   <div class="filters" id="filters"></div>
   <div class="count" id="count"></div>
   <div id="list"></div>
@@ -57,38 +59,73 @@ const CATS = [
 const CAT_LABEL = { eu:"EU pályázat", hu:"Magyar pályázat", tender:"Közbeszerzés / tender", company:"Céges tender" };
 const REL_LABEL = { high:"Magas relevancia", med:"Közepes", low:"Alacsony" };
 const REL_ORDER = { high:0, med:1, low:2 };
-let ITEMS = [], active = "all";
+const VIEWS = [
+  { key:"current", label:"Aktuális találatok" },
+  { key:"archive", label:"Archívum" }
+];
+let ITEMS = [], ARCHIVE = null, ARCHIVE_UPDATED = "", view = "current", active = "all";
+
+function source() { return view === "current" ? ITEMS : (ARCHIVE || []); }
 
 function render() {
+  const vbox = document.getElementById("views");
+  vbox.innerHTML = "";
+  VIEWS.forEach(v => {
+    const b = document.createElement("button");
+    b.textContent = v.label + (v.key === "archive" && ARCHIVE ? " (" + ARCHIVE.length + ")" : "");
+    if (v.key === view) b.className = "active";
+    b.onclick = () => switchView(v.key);
+    vbox.appendChild(b);
+  });
+  const src = source();
   const fbox = document.getElementById("filters");
   fbox.innerHTML = "";
   CATS.forEach(c => {
-    const n = c.key === "all" ? ITEMS.length : ITEMS.filter(i => i.category === c.key).length;
+    const n = c.key === "all" ? src.length : src.filter(i => i.category === c.key).length;
     const b = document.createElement("button");
     b.textContent = c.label + (c.key === "all" ? "" : " (" + n + ")");
     if (c.key === active) b.className = "active";
     b.onclick = () => { active = c.key; render(); };
     fbox.appendChild(b);
   });
-  const items = ITEMS.filter(i => active === "all" || i.category === active)
-    .sort((a,b) => (!!b.is_new - !!a.is_new) || (REL_ORDER[a.relevance]??3) - (REL_ORDER[b.relevance]??3));
-  document.getElementById("count").textContent = items.length + " megjelenített tétel";
+  const items = src.filter(i => active === "all" || i.category === active)
+    .sort((a,b) => view === "current"
+      ? (!!b.is_new - !!a.is_new) || (REL_ORDER[a.relevance]??3) - (REL_ORDER[b.relevance]??3)
+      : (b.last_seen||"").localeCompare(a.last_seen||"") || (REL_ORDER[a.relevance]??3) - (REL_ORDER[b.relevance]??3));
+  document.getElementById("count").textContent = items.length + " megjelenített tétel" +
+    (view === "archive" ? " – minden valaha talált kiírás" : "");
   const list = document.getElementById("list");
   list.innerHTML = "";
   items.forEach(i => {
+    const inactive = view === "archive" && ARCHIVE_UPDATED && i.last_seen < ARCHIVE_UPDATED;
     const card = document.createElement("div");
-    card.className = "card" + (i.is_new ? " new" : "");
+    card.className = "card" + (view === "current" && i.is_new ? " new" : "") + (inactive ? " inactive" : "");
     card.innerHTML =
-      '<div class="top"><h3>' + (i.is_new ? '<span class="newbadge">ÚJ</span>' : '') +
+      '<div class="top"><h3>' + (view === "current" && i.is_new ? '<span class="newbadge">ÚJ</span>' : '') +
         '<a href="' + i.url + '" target="_blank" rel="noopener">' + esc(i.title) + '</a></h3>' +
         '<span class="rel ' + (i.relevance||'low') + '">' + (REL_LABEL[i.relevance]||"?") + '</span></div>' +
       '<div class="tags"><span class="tag ' + i.category + '">' + (CAT_LABEL[i.category]||i.category) + '</span>' +
         (i.program ? '<span class="tag">' + esc(i.program) + '</span>' : '') +
-        (i.budget ? '<span class="tag">Keret: ' + esc(i.budget) + '</span>' : '') + '</div>' +
+        (i.budget ? '<span class="tag">Keret: ' + esc(i.budget) + '</span>' : '') +
+        (inactive ? '<span class="tag">már nem szerepel a friss találatok közt</span>' : '') + '</div>' +
       '<div class="desc">' + esc(i.summary||"") + '</div>' +
-      '<div class="meta"><b>Határidő:</b> ' + esc(i.deadline_text||"n/a") + '</div>';
+      '<div class="meta"><b>Határidő:</b> ' + esc(i.deadline_text||"n/a") +
+        (view === "archive" ? ' · <b>Először látva:</b> ' + esc(i.first_seen||"?") + ' · <b>Utoljára:</b> ' + esc(i.last_seen||"?") : '') +
+      '</div>';
     list.appendChild(card);
   });
+}
+
+function switchView(v) {
+  view = v;
+  if (v === "archive" && ARCHIVE === null) {
+    fetch("archive.json?ts=" + Date.now())
+      .then(r => r.json())
+      .then(d => { ARCHIVE = d.items || []; ARCHIVE_UPDATED = d.updated || ""; render(); })
+      .catch(() => { ARCHIVE = []; render(); });
+  } else {
+    render();
+  }
 }
 function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
