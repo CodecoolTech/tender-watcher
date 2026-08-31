@@ -1,6 +1,97 @@
 {
-  "updated": "2026-08-24",
+  "updated": "2026-08-31",
   "items": [
+    {
+      "title": "RM6219 – Learning and Training Services Dynamic Purchasing System (DPS)",
+      "url": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-02e5cb",
+      "category": "tender",
+      "program": "Crown Commercial Service (UK közbeszerzés)",
+      "budget": "850 millió GBP (teljes DPS keret)",
+      "deadline": "2028-10-27",
+      "deadline_text": "Folyamatosan nyitva, a DPS 2028.10.27-ig fut, beszállítók bármikor csatlakozhatnak",
+      "relevance": "high",
+      "summary": "Az egész brit közszféra (önkormányzatok, NHS, egyetemek, központi kormányzat) számára elérhető, folyamatosan nyitott képzési beszállítói keretmegállapodás – kiváló belépési pont a Codecool számára UK-s közszférás IT-/digitáliskészség-képzésekhez.",
+      "first_seen": "2026-08-31",
+      "last_seen": "2026-08-31"
+    },
+    {
+      "title": "Formation à l'accompagnement numérique – francia közbeszerzési felhívás",
+      "url": "https://francemarches.com/appel-offre/37ao26330663110920268033-2026-formation-accompagnement-numerique",
+      "category": "tender",
+      "program": "Francia közbeszerzés (BOAMP/francemarches)",
+      "budget": "",
+      "deadline": "",
+      "deadline_text": "Friss kiírás (kb. 2026 július-augusztus), pontos határidő a hirdetményben ellenőrizendő",
+      "relevance": "med",
+      "summary": "Digitális kompetenciafejlesztési (numérique) képzési szolgáltatás beszerzésére irányuló francia önkormányzati/állami közbeszerzés, releváns a Codecool digitális készségfejlesztő portfóliójához.",
+      "first_seen": "2026-08-31",
+      "last_seen": "2026-08-31"
+    },
+    {
+      "title": "Przetargi na szkolenia IT/programistyczne – lengyel közbeszerzési gyűjtőoldal",
+      "url": "https://www.oferent.com.pl/przetargi/branza/szkolenia---informatyczne-programistyczne-it/",
+      "category": "tender",
+      "program": "Lengyelország – BZP/TED alapú közbeszerzések",
+      "budget": "",
+      "deadline": "",
+      "deadline_text": "176 aktív kiírás folyamatosan frissül",
+      "relevance": "med",
+      "summary": "Élő lengyel közbeszerzési gyűjtőoldal kifejezetten informatikai/programozási képzési tenderekhez – jó forrás a Codecool számára a lengyel piac folyamatos monitorozásához.",
+      "first_seen": "2026-08-31",
+      "last_seen": "2026-08-31"
+    },
+    {
+      "title": "Aktív német közbeszerzési kiírások képzésre/oktatásra (folyamatosan frissülő lista)",
+      "url": "https://tendigo.de/ausschreibungen/weiterbildung",
+      "category": "tender",
+      "program": "Németország – különböző ajánlatkérők (szövetségi, tartományi, önkormányzati)",
+      "budget": "",
+      "deadline": "",
+      "deadline_text": "Folyamatosan frissülő aggregátor, jelenleg 41 aktív kiírás (utolsó frissítés 2026.07.30)",
+      "relevance": "med",
+      "summary": "Élő gyűjtőoldal, amely naponta több száz forrásból (BWI GmbH, DRV Bund, tartományi hivatalok stb.) listázza a Weiterbildung/E-Learning/IT-Schulung tárgyú aktív kiírásokat – érdemes rendszeresen figyelni konkrét IT-/programozásoktatási tenderekért.",
+      "first_seen": "2026-08-13",
+      "last_seen": "2026-08-31"
+    },
+    {
+      "title": "Erasmus+ Centres of Vocational Excellence (VET) – ERASMUS-EDU-2026-PEX-COVE",
+      "url": "https://erasmus-plus.ec.europa.eu/programme-guide/part-b/key-action-2/centres-vocational-excellence",
+      "category": "eu",
+      "program": "Erasmus+ 2026 (KA2 – Centres of Vocational Excellence)",
+      "budget": "",
+      "deadline": "2026-09-03",
+      "deadline_text": "2026. szeptember 3. 17:00 (brüsszeli idő)",
+      "relevance": "high",
+      "summary": "VET (szakképzési) kiválósági központok támogatása, digitális és zöld készségfejlesztésre fókuszálva – közvetlenül releváns a Codecool VET/reskilling tevékenységéhez.",
+      "first_seen": "2026-08-13",
+      "last_seen": "2026-08-31"
+    },
+    {
+      "title": "Esély a digitális tudásra (DIMOP_PLUSZ-4.2.9-25) – Széchenyi Terv Plusz",
+      "url": "https://palyazatmenedzser.hu/digitalizacios-palyazat/",
+      "category": "hu",
+      "program": "Széchenyi Terv Plusz / DIMOP Plusz",
+      "budget": "",
+      "deadline": "",
+      "deadline_text": "Folyamatban – 2026.01.09-én módosított költségvetési struktúra, pontos benyújtási határidő a palyazat.gov.hu oldalon ellenőrizendő",
+      "relevance": "med",
+      "summary": "Digitális tudás/kompetenciafejlesztést célzó hazai program hátrányos helyzetű célcsoportok számára – releváns lehet Codecool társadalmi célú digitáliskészség-programjaihoz, de a pontos határidőt priority ellenőrizni kell.",
+      "first_seen": "2026-08-12",
+      "last_seen": "2026-08-31"
+    },
+    {
+      "title": "DIGITAL-2026-SKILLS-10 – Advanced Digital Skills (incl. EdTech Accelerator, National Coalitions for Digital Skills and Jobs)",
+      "url": "https://hadea.ec.europa.eu/news/new-calls-proposals-under-digital-europe-programme-published-2026-04-10_en",
+      "category": "eu",
+      "program": "Digital Europe Programme (DIGITAL)",
+      "budget": "kb. 2-7,8 millió EUR / topik (összesen 63 millió EUR feletti call-keret)",
+      "deadline": "2026-10-01",
+      "deadline_text": "2026. október 1. 17:00 (brüsszeli idő)",
+      "relevance": "high",
+      "summary": "Kifejezetten fejlett digitális készségek fejlesztésére, EdTech megoldásokra és nemzeti digitális készség-koalíciókra irányuló EU-s pályázat, tökéletesen illik a Codecool profiljához.",
+      "first_seen": "2026-07-23",
+      "last_seen": "2026-08-31"
+    },
     {
       "title": "Erasmus+ akkreditáció VET, iskolai és felnőttoktatás területén (2026-os ciklus)",
       "url": "https://acridnetwork.com/erasmus-2026-call-for-proposals-has-been-published/",
@@ -80,19 +171,6 @@
       "last_seen": "2026-08-24"
     },
     {
-      "title": "„Esély a digitális tudásra” (DIMOP_PLUSZ-4.2.9-25)",
-      "url": "https://palyazatmenedzser.hu/digitalizacios-palyazat/",
-      "category": "hu",
-      "program": "Széchenyi Terv Plusz / DIMOP Plusz",
-      "budget": "",
-      "deadline": "",
-      "deadline_text": "Folyamatban (2026.01.09-én módosult a költségvetési struktúra) – pontos határidő a palyazat.gov.hu oldalon ellenőrizendő",
-      "relevance": "high",
-      "summary": "Célzottan digitális kompetenciafejlesztésre irányuló magyar felhívás – közvetlenül releváns a Codecool digitális/programozási képzési kínálatához; figyelem: csak másodlagos (aggregátor) forrás, az elsődleges kiírás a palyazat.gov.hu-n keresendő.",
-      "first_seen": "2026-08-12",
-      "last_seen": "2026-08-24"
-    },
-    {
       "title": "Centres of Vocational Excellence (CoVE) – ERASMUS-EDU-2026-PEX-COVE",
       "url": "https://pact-for-skills.ec.europa.eu/stakeholders-and-business/funding-opportunities/centres-vocational-excellence-1_en",
       "category": "eu",
@@ -103,19 +181,6 @@
       "relevance": "high",
       "summary": "Transznacionális VET-kiválósági központok (CoVE) létrehozása vállalatok, VET-intézmények és szociális partnerek bevonásával – a Codecool ipari/képzési partnerként csatlakozhat egy konzorciumhoz.",
       "first_seen": "2026-08-10",
-      "last_seen": "2026-08-24"
-    },
-    {
-      "title": "DIGITAL-2026-SKILLS-10-DIGITAL-HEALTH-STEP – Advanced Digital Skills for AI Uptake in Health",
-      "url": "https://hadea.ec.europa.eu/news/new-calls-proposals-under-digital-europe-programme-published-2026-04-10_en",
-      "category": "eu",
-      "program": "Digital Europe Programme (DIGITAL) / HaDEA",
-      "budget": "7,8M EUR",
-      "deadline": "",
-      "deadline_text": "Megnyílt 2026.04.21; pontos határidő a portálon",
-      "relevance": "med",
-      "summary": "AI-képzési programok kidolgozása egészségügyi szakembereknek – Codecool AI-training/upskilling szakértelme relevánssá teheti konzorciumi partnerként.",
-      "first_seen": "2026-07-23",
       "last_seen": "2026-08-24"
     },
     {
@@ -154,19 +219,6 @@
       "deadline_text": "Angebotsfrist: 2026.08.24.",
       "relevance": "med",
       "summary": "Egy német közintézmény SaaS-alapú digitális könyvtárat keres munkavállalói továbbképzéshez – EdTech/e-learning platform beszerzés, amely kapcsolódhat a Codecool tartalom- vagy platformkínálatához. Csak aggregátor listaoldal érhető el, a konkrét kiírás a megadott linken tovább szűrhető.",
-      "first_seen": "2026-08-13",
-      "last_seen": "2026-08-17"
-    },
-    {
-      "title": "BWI GmbH – Schulungs- und Trainingsleistungen (Führungskräfteentwicklung, Kat. 2)",
-      "url": "https://tendigo.de/ausschreibungen/weiterbildung",
-      "category": "company",
-      "program": "BWI GmbH (Deutsche Telekom / szövetségi IT-szolgáltató, Németország)",
-      "budget": "",
-      "deadline": "",
-      "deadline_text": "aktív kiírás, pontos határidő a Vergabekammer/aggregátor portálon ellenőrizendő",
-      "relevance": "med",
-      "summary": "A BWI GmbH (a Bundeswehr IT-szolgáltatója, Deutsche Telekom-részesedéssel) vezetőfejlesztési/tréning szolgáltatásokra ír ki beszerzést – releváns céges képzési beszállítói lehetőség, bár nem kifejezetten kódolás-fókuszú. Csak listaoldal érhető el, a konkrét kiírás további ellenőrzést igényel.",
       "first_seen": "2026-08-13",
       "last_seen": "2026-08-17"
     },
