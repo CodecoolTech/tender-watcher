@@ -1,11 +1,15 @@
 """
-Codecool Pályázatfigyelő – konfiguráció.
+Codecool Tender Watcher – configuration.
 
-Itt szabályozod a keresés fókuszát. A figyelt honlapokat NEM kell felsorolni:
-az AI a profil + a forrásportálok alapján magától keres és felderít cégoldalakat is.
+This is where you steer the focus of the search. You do NOT have to list the
+websites to monitor: based on the company profile and the source portals, the AI
+searches on its own and also discovers corporate procurement pages.
+
+Note: COMPANY_PROFILE and SEARCH_SEGMENTS are injected verbatim into the model
+prompt, so their text is deliberately kept in Hungarian.
 """
 
-# --- Cégprofil (a relevancia-szűrést vezérli) -------------------------------
+# --- Company profile (drives the relevance filtering) -----------------------
 COMPANY_PROFILE = """
 Cég: Codecool (codecool.com) – IT- és programozásoktatás, coding bootcamp.
 Jelenlét: főként Magyarország és Közép-Kelet-Európa, de EGÉSZ EURÓPÁBAN vállal munkát.
@@ -21,10 +25,11 @@ felnőttképzés, informatikai képzés, digitális kompetencia, ajánlattételi
 request for proposal (RFP), invitation to tender, beszállítói pályázat.
 """
 
-# --- Keresési szegmensek -----------------------------------------------------
-# FONTOS: a felsorolt portálok csak PÉLDÁK, nem kimerítő lista. A cél a teljes
-# európai piac lefedése – az AI minden szegmensben maga derít fel további
-# forrásokat (országos, városi és céges beszerzési oldalakat egyaránt).
+# --- Search segments ---------------------------------------------------------
+# IMPORTANT: the portals listed below are only EXAMPLES, not an exhaustive list.
+# The goal is to cover the whole European market – in every segment the AI is
+# expected to discover further sources on its own (national, municipal and
+# corporate procurement pages alike).
 SEARCH_SEGMENTS = [
     "EU-s pályázatok és támogatások – pl. EU Funding & Tenders Portal (Digital Europe, ESF+, Horizon), "
     "Erasmus+ / EACEA (VET, KA2), Digital Skills and Jobs Platform",
@@ -45,18 +50,15 @@ SEARCH_SEGMENTS = [
     "digital academy szolgáltatást keresnek beszállítótól",
 ]
 
-# Visszafelé kompatibilitás (régi név)
-SOURCES = SEARCH_SEGMENTS
-
-# --- OpenRouter / modell / futtatás -----------------------------------------
+# --- OpenRouter / model / run settings ---------------------------------------
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
-MODEL = "anthropic/claude-sonnet-5"   # jó ár/érték; erősebbhez pl. "anthropic/claude-opus-4.5"
+MODEL = "anthropic/claude-sonnet-5"   # good value for money; for something stronger use e.g. "anthropic/claude-opus-4.5"
 
-# Web-keresés (openrouter:web_search szervertool) beállításai:
-MAX_RESULTS_PER_SEARCH = 5     # egy keresés max. találata (Exa-motor); 1–25
-MAX_SEARCHES = 12              # hány keresést indíthat a modell egy futásban (max_uses)
-MAX_TOTAL_RESULTS = 60         # összes találat felső korlátja egy futásban (költség-/kontextuskorlát)
-                               # 12 keresés × 5 találat – kell a teljes piaci lefedettséghez; ha drága, vedd vissza
+# Web search (openrouter:web_search server tool) settings:
+MAX_RESULTS_PER_SEARCH = 5     # max. results per single search (Exa engine); 1–25
+MAX_SEARCHES = 12              # how many searches the model may run in one pass (max_uses)
+MAX_TOTAL_RESULTS = 60         # upper bound on all results in one pass (cost / context limit)
+                               # 12 searches × 5 results – needed for full market coverage; lower it if too expensive
 
-MIN_RELEVANCE = "med"          # "low" | "med" | "high" – ez alatti relevanciát nem jelentünk push-ban
+MIN_RELEVANCE = "med"          # "low" | "med" | "high" – anything below this is not reported in notifications

@@ -1,14 +1,15 @@
-name: Palyazatfigyelo
+name: Tender Watcher
 
-# Heti futás: hétfő 06:00 UTC = 08:00 Budapest (nyári idő, CEST).
-# Télen (CET, UTC+1) ez 07:00 Budapest lesz. A "workflow_dispatch" kézi indítást is enged.
+# Weekly run: Monday 06:00 UTC = 08:00 Budapest (summer time, CEST).
+# In winter (CET, UTC+1) this becomes 07:00 Budapest. "workflow_dispatch" also
+# allows a manual start.
 on:
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch: {}
 
 permissions:
-  contents: write   # kell, hogy a frissített dashboard + state visszakerüljön a repóba
+  contents: write   # needed so the updated dashboard + state can be pushed back to the repo
 
 jobs:
   run:
@@ -25,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run pályázatfigyelő
+      - name: Run tender watcher
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -35,12 +36,12 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
-        run: python palyazatfigyelo.py
+        run: python tender_watcher.py
 
-      - name: Commit frissített adatok
+      - name: Commit updated data
         run: |
-          git config user.name "palyazatfigyelo-bot"
+          git config user.name "tender-watcher-bot"
           git config user.email "actions@github.com"
           git add docs/ state/ digests/ || true
-          git commit -m "Heti pályázatfigyelő frissítés ($(date -u +%Y-%m-%d))" || echo "Nincs változás."
-          git push || echo "Push kihagyva."
+          git commit -m "Weekly tender watcher update ($(date -u +%Y-%m-%d))" || echo "No changes."
+          git push || echo "Push skipped."

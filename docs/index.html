@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="hu">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Codecool Pályázatfigyelő</title>
+<title>Codecool Tender Watcher</title>
 <style>
   * { box-sizing: border-box; }
   body { margin:0; background:#f6f7f9; color:#1a1a1a;
@@ -38,30 +38,30 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Codecool Pályázatfigyelő</h1>
-  <div class="sub">EU + magyar pályázatok, közbeszerzések/tenderek és EU-s cégoldalak automatikus figyelése – digitális készségek, IT-oktatás, felnőtt- és szakképzés fókusszal.</div>
-  <div class="updated" id="updated">Adatok betöltése…</div>
+  <h1>Codecool Tender Watcher</h1>
+  <div class="sub">Automated monitoring of EU and Hungarian funding calls, public procurements/tenders and EU corporate pages – focused on digital skills, IT education, adult education and vocational training.</div>
+  <div class="updated" id="updated">Loading data…</div>
   <div class="filters" id="views"></div>
   <div class="filters" id="filters"></div>
   <div class="count" id="count"></div>
   <div id="list"></div>
-  <footer>A relevancia-jelzés a Codecool-profilhoz becsült illeszkedés – nem hivatalos jogosultsági minősítés. A határidőt és jogosultságot mindig ellenőrizd a hivatalos forráson.</footer>
+  <footer>The relevance rating is an estimated fit with the Codecool profile – not an official eligibility assessment. Always verify the deadline and eligibility at the official source.</footer>
 </div>
 
 <script>
 const CATS = [
-  { key:"all", label:"Összes" },
-  { key:"eu", label:"EU pályázat" },
-  { key:"hu", label:"Magyar pályázat" },
-  { key:"tender", label:"Közbeszerzés / tender" },
-  { key:"company", label:"Céges tender" }
+  { key:"all", label:"All" },
+  { key:"eu", label:"EU funding call" },
+  { key:"hu", label:"Hungarian funding call" },
+  { key:"tender", label:"Public procurement / tender" },
+  { key:"company", label:"Corporate tender" }
 ];
-const CAT_LABEL = { eu:"EU pályázat", hu:"Magyar pályázat", tender:"Közbeszerzés / tender", company:"Céges tender" };
-const REL_LABEL = { high:"Magas relevancia", med:"Közepes", low:"Alacsony" };
+const CAT_LABEL = { eu:"EU funding call", hu:"Hungarian funding call", tender:"Public procurement / tender", company:"Corporate tender" };
+const REL_LABEL = { high:"High relevance", med:"Medium", low:"Low" };
 const REL_ORDER = { high:0, med:1, low:2 };
 const VIEWS = [
-  { key:"current", label:"Aktuális találatok" },
-  { key:"archive", label:"Archívum" }
+  { key:"current", label:"Current results" },
+  { key:"archive", label:"Archive" }
 ];
 let ITEMS = [], ARCHIVE = null, ARCHIVE_UPDATED = "", view = "current", active = "all";
 
@@ -92,8 +92,8 @@ function render() {
     .sort((a,b) => view === "current"
       ? (!!b.is_new - !!a.is_new) || (REL_ORDER[a.relevance]??3) - (REL_ORDER[b.relevance]??3)
       : (b.last_seen||"").localeCompare(a.last_seen||"") || (REL_ORDER[a.relevance]??3) - (REL_ORDER[b.relevance]??3));
-  document.getElementById("count").textContent = items.length + " megjelenített tétel" +
-    (view === "archive" ? " – minden valaha talált kiírás" : "");
+  document.getElementById("count").textContent = items.length + " item(s) shown" +
+    (view === "archive" ? " – every call ever found" : "");
   const list = document.getElementById("list");
   list.innerHTML = "";
   items.forEach(i => {
@@ -101,16 +101,16 @@ function render() {
     const card = document.createElement("div");
     card.className = "card" + (view === "current" && i.is_new ? " new" : "") + (inactive ? " inactive" : "");
     card.innerHTML =
-      '<div class="top"><h3>' + (view === "current" && i.is_new ? '<span class="newbadge">ÚJ</span>' : '') +
+      '<div class="top"><h3>' + (view === "current" && i.is_new ? '<span class="newbadge">NEW</span>' : '') +
         '<a href="' + i.url + '" target="_blank" rel="noopener">' + esc(i.title) + '</a></h3>' +
         '<span class="rel ' + (i.relevance||'low') + '">' + (REL_LABEL[i.relevance]||"?") + '</span></div>' +
       '<div class="tags"><span class="tag ' + i.category + '">' + (CAT_LABEL[i.category]||i.category) + '</span>' +
         (i.program ? '<span class="tag">' + esc(i.program) + '</span>' : '') +
-        (i.budget ? '<span class="tag">Keret: ' + esc(i.budget) + '</span>' : '') +
-        (inactive ? '<span class="tag">már nem szerepel a friss találatok közt</span>' : '') + '</div>' +
+        (i.budget ? '<span class="tag">Budget: ' + esc(i.budget) + '</span>' : '') +
+        (inactive ? '<span class="tag">no longer among the current results</span>' : '') + '</div>' +
       '<div class="desc">' + esc(i.summary||"") + '</div>' +
-      '<div class="meta"><b>Határidő:</b> ' + esc(i.deadline_text||"n/a") +
-        (view === "archive" ? ' · <b>Először látva:</b> ' + esc(i.first_seen||"?") + ' · <b>Utoljára:</b> ' + esc(i.last_seen||"?") : '') +
+      '<div class="meta"><b>Deadline:</b> ' + esc(i.deadline_text||"n/a") +
+        (view === "archive" ? ' · <b>First seen:</b> ' + esc(i.first_seen||"?") + ' · <b>Last seen:</b> ' + esc(i.last_seen||"?") : '') +
       '</div>';
     list.appendChild(card);
   });
@@ -133,10 +133,10 @@ fetch("data.json?ts=" + Date.now())
   .then(r => r.json())
   .then(d => {
     ITEMS = d.items || [];
-    document.getElementById("updated").textContent = "Utolsó frissítés: " + (d.updated||"?") + " · " + ITEMS.length + " tétel";
+    document.getElementById("updated").textContent = "Last updated: " + (d.updated||"?") + " · " + ITEMS.length + " item(s)";
     render();
   })
-  .catch(() => { document.getElementById("updated").textContent = "Még nincs adat – az első futás után jelenik meg."; });
+  .catch(() => { document.getElementById("updated").textContent = "No data yet – it appears after the first run."; });
 </script>
 </body>
 </html>

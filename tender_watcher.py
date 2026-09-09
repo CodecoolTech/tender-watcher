@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """
-Codecool Pályázatfigyelő – felhős heti futás.
+Codecool Tender Watcher – weekly run in the cloud.
 
-Mit csinál egy futáskor:
-  1. OpenRouteren keresztül hívja a modellt (Anthropic Claude) az openrouter:web_search
-     szervertoollal; átfésüli a forrásportálokat és célzottan felderít EU-s cégoldalakat
-     releváns, nyitott pályázatokért/tenderekért.
-  2. A modell strukturált JSON-t ad vissza a találatokról.
-  3. Deduplikál a state/seen.json alapján -> megjelöli az ÚJ tételeket.
-  4. Frissíti a dashboard adatát (docs/data.json) és ír egy digestet (digests/…md).
-  5. E-mailt és/vagy Slack-üzenetet küld, ha van új találat.
+What a single run does:
+  1. Calls the model (Anthropic Claude) through OpenRouter with the
+     openrouter:web_search server tool; it combs through the source portals and
+     also targets EU corporate pages for relevant, open calls / tenders.
+  2. The model returns structured JSON describing the results.
+  3. Deduplicates against state/seen.json -> flags the NEW items.
+  4. Updates the dashboard data (docs/data.json) and writes a digest (digests/…md).
+  5. Sends an e-mail and/or a Slack message if there is anything new.
 
-Környezeti változók (GitHub Actions secrets):
-  OPENROUTER_API_KEY          – kötelező
-  SLACK_WEBHOOK_URL           – opcionális (Slack incoming webhook)
-  SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM, EMAIL_TO – opcionális (e-mail)
+Environment variables (GitHub Actions secrets):
+  OPENROUTER_API_KEY          – required
+  SLACK_WEBHOOK_URL           – optional (Slack incoming webhook)
+  SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM, EMAIL_TO – optional (e-mail)
 """
 
 import os
@@ -42,9 +42,11 @@ REL_ORDER = {"high": 0, "med": 1, "low": 2}
 
 
 # --------------------------------------------------------------------------- #
-# 1. Keresés OpenRouteren keresztül (openrouter:web_search szervertool)
+# 1. Search through OpenRouter (openrouter:web_search server tool)
 # --------------------------------------------------------------------------- #
 def build_prompt() -> str:
+    """Build the model prompt. Kept in Hungarian on purpose: the company profile
+    and the search segments in config.py are written in Hungarian as well."""
     segments = "\n".join(f"  {n}. {s}" for n, s in enumerate(config.SEARCH_SEGMENTS, 1))
     today = dt.date.today().isoformat()
     return f"""Ma {today} van. Te a Codecool pályázat- és tenderfigyelője vagy.
@@ -102,8 +104,8 @@ def fetch_opportunities(api_key: str) -> list[dict]:
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/codecool/palyazatfigyelo",
-        "X-Title": "Codecool Palyazatfigyelo",
+        "HTTP-Referer": "https://github.com/codecool/tender-watcher",
+        "X-Title": "Codecool Tender Watcher",
     }
     body = {
         "model": config.MODEL,
@@ -130,7 +132,7 @@ def fetch_opportunities(api_key: str) -> list[dict]:
     try:
         content = data["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as exc:
-        raise SystemExit(f"Váratlan OpenRouter-válasz: {json.dumps(data)[:800]}") from exc
+        raise SystemExit(f"Unexpected OpenRouter response: {json.dumps(data)[:800]}") from exc
     if isinstance(content, list):
         text = "".join(part.get("text", "") for part in content if isinstance(part, dict))
     else:
@@ -139,9 +141,9 @@ def fetch_opportunities(api_key: str) -> list[dict]:
 
 
 def log_search_debug(data: dict) -> None:
-    """A nyers API-választ elmenti (state/last_response.json), és kiírja a futási
-    logba, hogy hány web-keresés történt, milyen kereséseket indított a modell
-    (ha a válasz tartalmazza), és mely forrásokra hivatkozott."""
+    """Saves the raw API response (state/last_response.json) and prints to the run
+    log how many web searches happened, which searches the model started (if the
+    response contains them), and which sources it cited."""
     STATE_DIR.mkdir(exist_ok=True)
     (STATE_DIR / "last_response.json").write_text(
         json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -149,14 +151,14 @@ def log_search_debug(data: dict) -> None:
     usage = data.get("usage") or {}
     server_tools = usage.get("server_tool_use_details") or usage.get("server_tool_use") or {}
     if server_tools:
-        print(f"Web-keresések száma ebben a futásban: {server_tools.get('web_search_requests', '?')}")
+        print(f"Web searches in this run: {server_tools.get('web_search_requests', '?')}")
     if usage.get("cost") is not None:
-        print(f"Futás költsége: ${usage['cost']:.4f}")
+        print(f"Run cost: ${usage['cost']:.4f}")
 
     message = (data.get("choices") or [{}])[0].get("message") or {}
     for call in message.get("tool_calls") or []:
         fn = call.get("function") or {}
-        print(f"Tool-hívás: {fn.get('name', '?')} {fn.get('arguments', '')}")
+        print(f"Tool call: {fn.get('name', '?')} {fn.get('arguments', '')}")
 
     urls = sorted({
         a.get("url_citation", {}).get("url")
@@ -164,13 +166,13 @@ def log_search_debug(data: dict) -> None:
         if isinstance(a, dict) and a.get("url_citation", {}).get("url")
     })
     if urls:
-        print(f"Hivatkozott források ({len(urls)}):")
+        print(f"Cited sources ({len(urls)}):")
         for u in urls:
             print(f"  - {u}")
 
 
 def parse_json_array(text: str) -> list[dict]:
-    # Először ```json … ``` blokkot keresünk, aztán az utolsó [...]-tömböt.
+    # Look for a ```json … ``` block first, then for the last [...] array.
     fenced = re.findall(r"```(?:json)?\s*(\[.*?\])\s*```", text, re.DOTALL)
     candidates = fenced[:]
     if not candidates:
@@ -217,7 +219,7 @@ def mark_new(items: list[dict], seen: dict) -> list[dict]:
 
 
 # --------------------------------------------------------------------------- #
-# 3. Kimenetek: dashboard adat + digest
+# 3. Outputs: dashboard data + digest
 # --------------------------------------------------------------------------- #
 def write_data_json(items: list[dict]) -> None:
     DOCS_DIR.mkdir(exist_ok=True)
@@ -229,8 +231,8 @@ def write_data_json(items: list[dict]) -> None:
 
 
 def update_archive(items: list[dict]) -> None:
-    """Kumulatív archívum: minden valaha talált tétel megmarad (docs/archive.json),
-    first_seen / last_seen dátumokkal. A dashboard Archívum nézete ebből olvas."""
+    """Cumulative archive: every item ever found is kept (docs/archive.json) with
+    first_seen / last_seen dates. The Archive view of the dashboard reads this."""
     today = dt.date.today().isoformat()
     archive: dict[str, dict] = {}
     if ARCHIVE_FILE.exists():
@@ -257,16 +259,16 @@ def write_digest(items: list[dict]) -> Path:
     today = dt.date.today().isoformat()
     new_items = [i for i in items if i["is_new"]]
     lines = [
-        f"# Codecool Pályázatfigyelő – digest ({today})",
+        f"# Codecool Tender Watcher – digest ({today})",
         "",
-        f"Összes találat: {len(items)} · Ebből új: {len(new_items)}",
+        f"Total results: {len(items)} · New among them: {len(new_items)}",
         "",
     ]
     if new_items:
-        lines += ["## Új találatok", ""]
+        lines += ["## New results", ""]
         for i in new_items:
             lines += _digest_block(i)
-    lines += ["## Összes aktuális tétel", ""]
+    lines += ["## All current items", ""]
     for i in items:
         lines += _digest_block(i)
     path = DIGEST_DIR / f"digest-{today}.md"
@@ -275,12 +277,12 @@ def write_digest(items: list[dict]) -> Path:
 
 
 def _digest_block(i: dict) -> list[str]:
-    rel = {"high": "Magas", "med": "Közepes", "low": "Alacsony"}.get(i.get("relevance"), "?")
+    rel = {"high": "High", "med": "Medium", "low": "Low"}.get(i.get("relevance"), "?")
     tag = "🆕 " if i.get("is_new") else ""
     return [
         f"### {tag}{i.get('title', '')}",
-        f"- **Forrás:** {i.get('program', '')} · **Kategória:** {i.get('category', '')}",
-        f"- **Keret:** {i.get('budget') or 'n/a'} · **Határidő:** {i.get('deadline_text') or 'n/a'} · **Relevancia:** {rel}",
+        f"- **Source:** {i.get('program', '')} · **Category:** {i.get('category', '')}",
+        f"- **Budget:** {i.get('budget') or 'n/a'} · **Deadline:** {i.get('deadline_text') or 'n/a'} · **Relevance:** {rel}",
         f"- {i.get('summary', '')}",
         f"- {i.get('url', '')}",
         "",
@@ -288,15 +290,15 @@ def _digest_block(i: dict) -> list[str]:
 
 
 # --------------------------------------------------------------------------- #
-# 4. Értesítések
+# 4. Notifications
 # --------------------------------------------------------------------------- #
 def notify_slack(new_items: list[dict]) -> None:
     url = os.environ.get("SLACK_WEBHOOK_URL")
     if not url or not new_items:
         return
-    lines = [f"*Codecool Pályázatfigyelő – {len(new_items)} új találat*"]
+    lines = [f"*Codecool Tender Watcher – {len(new_items)} new result(s)*"]
     for i in new_items:
-        lines.append(f"• <{i['url']}|{i.get('title','')}> — {i.get('deadline_text') or 'nincs határidő'} ({i.get('relevance')})")
+        lines.append(f"• <{i['url']}|{i.get('title','')}> — {i.get('deadline_text') or 'no deadline'} ({i.get('relevance')})")
     requests.post(url, json={"text": "\n".join(lines)}, timeout=30)
 
 
@@ -307,7 +309,7 @@ def notify_email(new_items: list[dict], digest_path: Path) -> None:
         return
     body = digest_path.read_text(encoding="utf-8")
     msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = f"Pályázatfigyelő – {len(new_items)} új találat ({dt.date.today().isoformat()})"
+    msg["Subject"] = f"Tender Watcher – {len(new_items)} new result(s) ({dt.date.today().isoformat()})"
     msg["From"] = os.environ.get("EMAIL_FROM", os.environ.get("SMTP_USER", ""))
     msg["To"] = to
     port = int(os.environ.get("SMTP_PORT", "587"))
@@ -321,11 +323,11 @@ def notify_email(new_items: list[dict], digest_path: Path) -> None:
 def main() -> None:
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
-        raise SystemExit("Hiányzik az OPENROUTER_API_KEY környezeti változó.")
+        raise SystemExit("The OPENROUTER_API_KEY environment variable is missing.")
 
     items = fetch_opportunities(api_key)
     if not items:
-        print("Nincs feldolgozható találat (üres vagy hibás JSON).")
+        print("No processable results (empty or malformed JSON).")
     seen = load_seen()
     items = mark_new(items, seen)
     save_seen(seen)
@@ -342,7 +344,7 @@ def main() -> None:
     notify_slack(new_items)
     notify_email(new_items, digest_path)
 
-    print(f"Kész. Összes: {len(items)}, új (jelentett): {len(new_items)}. Digest: {digest_path.name}")
+    print(f"Done. Total: {len(items)}, new (reported): {len(new_items)}. Digest: {digest_path.name}")
 
 
 if __name__ == "__main__":
