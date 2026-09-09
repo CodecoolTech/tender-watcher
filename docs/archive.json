@@ -1,6 +1,58 @@
 {
-  "updated": "2026-08-31",
+  "updated": "2026-09-09",
   "items": [
+    {
+      "title": "ECCC Call for Proposals – Digital Europe Programme (Cybersecurity & Advanced Digital Skills), 2026-2027",
+      "url": "https://cybersecurity-centre.europa.eu/news/new-eccc-call-proposals-under-digital-europe-programme-open-applications-2026-09-01_en",
+      "category": "eu",
+      "program": "Digital Europe Programme – European Cybersecurity Competence Centre (ECCC)",
+      "budget": "96 millió EUR (teljes felhívás)",
+      "deadline": "2027-01-14",
+      "deadline_text": "2027. január 14. 17:00 CET",
+      "relevance": "med",
+      "summary": "A felhívás a kiberbiztonsági és fejlett digitális készségek (advanced digital skills) területét is lefedi, így a Codecool IT-/programozásoktatási kompetenciái konzorciumi partnerként releváns lehetnek képzési komponensekhez.",
+      "first_seen": "2026-09-09",
+      "last_seen": "2026-09-09"
+    },
+    {
+      "title": "IT-Schulungen Rahmenvertrag (INVARIS Software) – Deutsche Rentenversicherung Bund",
+      "url": "https://tendigo.de/ausschreibungen/weiterbildung",
+      "category": "tender",
+      "program": "Nemzeti közbeszerzés (Németország) – DRV Bund",
+      "budget": "",
+      "deadline": "",
+      "deadline_text": "Keretszerződés futamideje várhatóan 2026.09.01–2032.08.31; a listaoldal folyamatosan frissül aktív ajánlattételi felhívásokkal",
+      "relevance": "med",
+      "summary": "Bár szoftver-specifikus (INVARIS) IT-oktatásról van szó, jól illusztrálja, hogy német közintézmények rendszeresen írnak ki több éves IT-képzési keretszerződéseket – érdemes a tendigo.de Weiterbildung kategóriáját rendszeresen monitorozni hasonló, tágabb IT-training tenderekért.",
+      "first_seen": "2026-08-13",
+      "last_seen": "2026-09-09"
+    },
+    {
+      "title": "„Esély a digitális tudásra” – DIMOP_PLUSZ-4.2.9-25 felhívás",
+      "url": "https://palyazatmenedzser.hu/digitalizacios-palyazat/",
+      "category": "hu",
+      "program": "Széchenyi Terv Plusz – DIMOP Plusz",
+      "budget": "",
+      "deadline": "",
+      "deadline_text": "Nincs pontos, egyértelmű határidő a forrásban; a felhívás dokumentuma 2026 januárjában módosult, ami aktív státuszra utal",
+      "relevance": "high",
+      "summary": "A cím és a téma (digitális tudás, esélyegyenlőség) közvetlenül a Codecool felnőttképzési / digitális kompetenciafejlesztési profiljába tartozik; érdemes a palyazat.gov.hu oldalon a pontos felhívást és határidőt közvetlenül ellenőrizni.",
+      "first_seen": "2026-08-12",
+      "last_seen": "2026-09-09"
+    },
+    {
+      "title": "DIGITAL-2026-SKILLS-10 – Advanced Digital Skills / EdTech Accelerator / National Coalitions for Digital Skills and Jobs",
+      "url": "https://hadea.ec.europa.eu/news/new-calls-proposals-under-digital-europe-programme-published-2026-04-10_en",
+      "category": "eu",
+      "program": "Digital Europe Programme (DEP), HaDEA",
+      "budget": "EdTech accelerator: 2,7M EUR; National Coalitions: 2M EUR; Digital Health STEP: 7,8M EUR",
+      "deadline": "2026-10-01",
+      "deadline_text": "2026. október 1. 17:00 (Brüsszeli idő)",
+      "relevance": "high",
+      "summary": "Az EdTech accelerator és Advanced Digital Skills alprogramok pontosan a Codecool profiljába tartoznak (programozásoktatás, digitális kompetenciafejlesztés, EdTech megoldások), konzorciumi partnerként vagy önálló pályázóként releváns.",
+      "first_seen": "2026-07-23",
+      "last_seen": "2026-09-09"
+    },
     {
       "title": "RM6219 – Learning and Training Services Dynamic Purchasing System (DPS)",
       "url": "https://www.find-tender.service.gov.uk/procurement/ocds-h6vhtk-02e5cb",
@@ -41,19 +93,6 @@
       "last_seen": "2026-08-31"
     },
     {
-      "title": "Aktív német közbeszerzési kiírások képzésre/oktatásra (folyamatosan frissülő lista)",
-      "url": "https://tendigo.de/ausschreibungen/weiterbildung",
-      "category": "tender",
-      "program": "Németország – különböző ajánlatkérők (szövetségi, tartományi, önkormányzati)",
-      "budget": "",
-      "deadline": "",
-      "deadline_text": "Folyamatosan frissülő aggregátor, jelenleg 41 aktív kiírás (utolsó frissítés 2026.07.30)",
-      "relevance": "med",
-      "summary": "Élő gyűjtőoldal, amely naponta több száz forrásból (BWI GmbH, DRV Bund, tartományi hivatalok stb.) listázza a Weiterbildung/E-Learning/IT-Schulung tárgyú aktív kiírásokat – érdemes rendszeresen figyelni konkrét IT-/programozásoktatási tenderekért.",
-      "first_seen": "2026-08-13",
-      "last_seen": "2026-08-31"
-    },
-    {
       "title": "Erasmus+ Centres of Vocational Excellence (VET) – ERASMUS-EDU-2026-PEX-COVE",
       "url": "https://erasmus-plus.ec.europa.eu/programme-guide/part-b/key-action-2/centres-vocational-excellence",
       "category": "eu",
@@ -64,32 +103,6 @@
       "relevance": "high",
       "summary": "VET (szakképzési) kiválósági központok támogatása, digitális és zöld készségfejlesztésre fókuszálva – közvetlenül releváns a Codecool VET/reskilling tevékenységéhez.",
       "first_seen": "2026-08-13",
-      "last_seen": "2026-08-31"
-    },
-    {
-      "title": "Esély a digitális tudásra (DIMOP_PLUSZ-4.2.9-25) – Széchenyi Terv Plusz",
-      "url": "https://palyazatmenedzser.hu/digitalizacios-palyazat/",
-      "category": "hu",
-      "program": "Széchenyi Terv Plusz / DIMOP Plusz",
-      "budget": "",
-      "deadline": "",
-      "deadline_text": "Folyamatban – 2026.01.09-én módosított költségvetési struktúra, pontos benyújtási határidő a palyazat.gov.hu oldalon ellenőrizendő",
-      "relevance": "med",
-      "summary": "Digitális tudás/kompetenciafejlesztést célzó hazai program hátrányos helyzetű célcsoportok számára – releváns lehet Codecool társadalmi célú digitáliskészség-programjaihoz, de a pontos határidőt priority ellenőrizni kell.",
-      "first_seen": "2026-08-12",
-      "last_seen": "2026-08-31"
-    },
-    {
-      "title": "DIGITAL-2026-SKILLS-10 – Advanced Digital Skills (incl. EdTech Accelerator, National Coalitions for Digital Skills and Jobs)",
-      "url": "https://hadea.ec.europa.eu/news/new-calls-proposals-under-digital-europe-programme-published-2026-04-10_en",
-      "category": "eu",
-      "program": "Digital Europe Programme (DIGITAL)",
-      "budget": "kb. 2-7,8 millió EUR / topik (összesen 63 millió EUR feletti call-keret)",
-      "deadline": "2026-10-01",
-      "deadline_text": "2026. október 1. 17:00 (brüsszeli idő)",
-      "relevance": "high",
-      "summary": "Kifejezetten fejlett digitális készségek fejlesztésére, EdTech megoldásokra és nemzeti digitális készség-koalíciókra irányuló EU-s pályázat, tökéletesen illik a Codecool profiljához.",
-      "first_seen": "2026-07-23",
       "last_seen": "2026-08-31"
     },
     {
