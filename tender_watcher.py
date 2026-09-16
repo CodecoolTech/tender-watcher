@@ -19,16 +19,20 @@ Environment variables (GitHub Actions secrets):
 
 import os
 import re
+import sys
+import time
 import json
 import ssl
 import smtplib
 import datetime as dt
 from email.mime.text import MIMEText
 from pathlib import Path
+from urllib.parse import SplitResult, urlsplit
 
 import requests
 
 import config
+import ted_source
 
 ROOT = Path(__file__).parent
 STATE_DIR = ROOT / "state"
@@ -40,15 +44,28 @@ ARCHIVE_FILE = DOCS_DIR / "archive.json"
 
 REL_ORDER = {"high": 0, "med": 1, "low": 2}
 
+# HTTP statuses worth a retry: transient provider / rate-limit hiccups.
+# 401/402/403/404 are NOT here – those need a human, retrying only wastes time.
+RETRY_STATUSES = {408, 409, 429, 500, 502, 503, 504}
+RETRY_ATTEMPTS = 3
+
 
 # --------------------------------------------------------------------------- #
 # 1. Search through OpenRouter (openrouter:web_search server tool)
 # --------------------------------------------------------------------------- #
-def build_prompt() -> str:
+def build_prompt(ted_candidates: list[dict]) -> str:
     """Build the model prompt. Kept in Hungarian on purpose: the company profile
-    and the search segments in config.py are written in Hungarian as well."""
+    and the search segments in config.py are written in Hungarian as well.
+
+    `ted_candidates` are open TED notices fetched straight from the API - the
+    model does not have to search for them, only to judge their relevance."""
     segments = "\n".join(f"  {n}. {s}" for n, s in enumerate(config.SEARCH_SEGMENTS, 1))
+    sources = "\n".join(
+        f"  - {s['name']}: {s['url']}\n    → a jelentésbe ez kerüljön: {s['item_hint']}"
+        for s in config.MONITORED_SOURCES
+    )
     today = dt.date.today().isoformat()
+    ted_block = _ted_prompt_block(ted_candidates)
     return f"""Ma {today} van. Te a Codecool pályázat- és tenderfigyelője vagy.
 
 CÉGPROFIL:
@@ -65,6 +82,16 @@ megtalálható, de kiemelten fontos kategória. A zárójeles portálnevek csak 
 NE korlátozd rájuk a keresést, minden szegmensben derítsd fel magad a további forrásokat:
 {segments}
 
+KÖTELEZŐEN FIGYELENDŐ FORRÁSOK – ezeket MINDEN futásban nézd át (pl. site: szűkítéssel):
+{sources}
+Ezek BELÉPÉSI PONTOK, nem eredmények! Magát a felsorolt listaoldalt / híroldalt SOHA ne add
+vissza találatként – mindig az egyes konkrét kiírás saját oldaláig kell lefúrni. Ha egy
+listaoldalon vagy hírben több kiírást látsz, mindegyikre futtass külön célzott keresést
+(pl. "site:hadea.ec.europa.eu calls-proposals advanced digital skills",
+"site:ted.europa.eu notice IT training", "site:ekr.gov.hu EKR képzés eljárás"),
+és a megtalált KONKRÉT oldalakat vedd fel külön tételként.
+
+{ted_block}
 Keresési tippek:
   - Keress helyi nyelveken is, pl.: "tarjouspyyntö koulutus", "Ausschreibung IT-Schulung",
     "appel d'offres formation numérique", "przetarg szkolenia IT", "διαγωνισμός κατάρτιση",
@@ -78,8 +105,24 @@ Szabályok:
   - Csak VALÓS, ellenőrzött találatokat adj meg valódi, működő linkkel. Ne találj ki kiírást.
   - Csak a cégprofilhoz releváns tételeket tartsd meg.
   - LEJÁRT határidejű kiírást ne vegyél fel – a mai dátumhoz ({today}) képest ellenőrizd.
-  - Az "url" mező a KONKRÉT kiírás oldalára mutasson, ne aggregátor keresőoldalra vagy
-    listaoldalra (ha csak listaoldal érhető el, azt add meg, de jelezd a summary-ben).
+  - EU-s programok (Digital Europe, Erasmus+, Horizon stb.) call-jainál KÖTELEZŐ a hivatalos
+    europa.eu oldal (ec.europa.eu topic-details, hadea.ec.europa.eu/calls-proposals, eacea…).
+    Nemzeti kapcsolattartó (pl. ffg.at) vagy tanácsadó összefoglalója NEM elfogadható.
+    A call SAJÁT topic-oldalát add meg (…/topic-details/DIGITAL-2026-SKILLS-10), NE a
+    munkaprogram PDF-jét – abban több topic is benne van, így két külön tétel ugyanarra a
+    linkre mutatna, és a rendszer az egyiket elveszítené.
+  - Az "url" mező KÖTELEZŐEN EGYETLEN konkrét kiírás saját oldalára mutasson. A jelentésen
+    kívüli, automatikusan ELDOBOTT (tehát felesleges) linkek:
+      * pályázatíró / hírportál cikkek, amelyek csak ÍRNAK a kiírásokról, pl.
+        https://palyazatmenedzser.hu/digitalizacios-palyazat/
+      * EU-s vagy hatósági HÍROLDALAK, amelyek csak bejelentik, hogy megjelentek a call-ok, pl.
+        https://hadea.ec.europa.eu/news/new-calls-proposals-under-digital-europe-programme-published-2026-04-10_en
+        (ilyenkor a hírben felsorolt EGYES call-ok saját oldalát add meg, a hírt magát ne)
+      * portál-főoldalak, kereső-, kategória- és listaoldalak, pl.
+        https://ted.europa.eu/hu/, https://ekr.gov.hu/portal/kozbeszerzes/hirdetmenyek,
+        https://tendigo.de/ausschreibungen/weiterbildung, https://erasmus-plus.ec.europa.eu/opportunities
+    Ha egy kiíráshoz nem találod meg a saját oldalát, inkább HAGYD KI a tételt – a listaoldal
+    nem elfogadható pótlék.
   - Törekedj arra, hogy a találatok több országból és több szegmensből (pályázat,
     közbeszerzés, céges tender) származzanak, ne csak egy-két portálról.
 
@@ -100,6 +143,30 @@ A válaszod VÉGÉN adj vissza KIZÁRÓLAG egy JSON-tömböt (```json blokkban),
 Csak a JSON-tömböt add a záró blokkban, más szöveget ne tegyél utána."""
 
 
+def _ted_prompt_block(candidates: list[dict]) -> str:
+    """The TED notices are handed over as data, not as something to search for.
+    Empty (API down / nothing open) -> the prompt simply does not mention TED."""
+    if not candidates:
+        return ""
+    listing = ted_source.format_for_prompt(candidates)
+    return f"""
+NYITOTT TED-KÖZBESZERZÉSEK ({len(candidates)} db) – ezeket KÉSZEN KAPOD a TED hivatalos
+API-jából, NEM kell rájuk keresned. Mind nyitott határidejű és ellenőrzött:
+{listing}
+
+Mit kezdj velük:
+  - Nézd át MINDET, és amelyik a cégprofilhoz releváns (IT-/digitális képzés, e-learning,
+    reskilling, tananyagfejlesztés, oktatási szolgáltatás), azt vedd fel a végső JSON-be
+    "tender" kategóriával, PONTOSAN a fenti URL-lel és határidővel.
+  - A nem relevánsakat (pl. tűzvédelmi oktatás, jogosítvány, nyelvtanfolyam) hagyd ki –
+    ne magyarázkodj miattuk.
+  - Mivel a TED-et így már lefedtük, a web-search kereséseidet a TÖBBI szegmensre fordítsd:
+    EU-s és magyar pályázatok, városi/önkormányzati beszerzések, és kiemelten a
+    céges/magánszektor tenderek.
+
+"""
+
+
 def fetch_opportunities(api_key: str) -> list[dict]:
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -109,7 +176,7 @@ def fetch_opportunities(api_key: str) -> list[dict]:
     }
     body = {
         "model": config.MODEL,
-        "messages": [{"role": "user", "content": build_prompt()}],
+        "messages": [{"role": "user", "content": build_prompt(ted_source.fetch_candidates())}],
         "max_tokens": 16000,
         "tools": [{
             "type": "openrouter:web_search",
@@ -120,13 +187,10 @@ def fetch_opportunities(api_key: str) -> list[dict]:
             },
         }],
     }
-    resp = requests.post(
-        f"{config.OPENROUTER_BASE_URL}/chat/completions",
-        headers=headers,
-        json=body,
-        timeout=600,
-    )
-    resp.raise_for_status()
+    resp = post_with_retry(headers, body)
+    if resp.status_code != 200:
+        report_api_error(resp, api_key)
+        raise SystemExit(f"The OpenRouter call failed: HTTP {resp.status_code} (details above).")
     data = resp.json()
     log_search_debug(data)
     try:
@@ -137,7 +201,84 @@ def fetch_opportunities(api_key: str) -> list[dict]:
         text = "".join(part.get("text", "") for part in content if isinstance(part, dict))
     else:
         text = content or ""
-    return parse_json_array(text)
+    return filter_items(parse_json_array(text), "model results")
+
+
+def post_with_retry(headers: dict, body: dict) -> requests.Response:
+    """POST to OpenRouter, retrying only the transient statuses (rate limit,
+    provider hiccup). Returns the last response – the caller inspects the code."""
+    resp = None
+    for attempt in range(1, RETRY_ATTEMPTS + 1):
+        resp = requests.post(
+            f"{config.OPENROUTER_BASE_URL}/chat/completions",
+            headers=headers,
+            json=body,
+            timeout=600,
+        )
+        if resp.status_code == 200 or resp.status_code not in RETRY_STATUSES:
+            return resp
+        if attempt == RETRY_ATTEMPTS:
+            break
+        wait = 30 * attempt
+        print(f"OpenRouter HTTP {resp.status_code}: {error_reason(resp)} – "
+              f"retry {attempt}/{RETRY_ATTEMPTS - 1} in {wait}s")
+        time.sleep(wait)
+    return resp
+
+
+def error_reason(resp: requests.Response) -> str:
+    """Pull the human-readable reason out of an OpenRouter error body.
+    Shape: {"error": {"code": …, "message": …, "metadata": {…}}}."""
+    try:
+        err = (resp.json() or {}).get("error") or {}
+    except ValueError:
+        return resp.text[:600] or "(empty response body)"
+    parts = [str(err.get("message") or "(no message)")]
+    meta = err.get("metadata") or {}
+    if meta.get("reasons"):
+        parts.append("moderation reasons: " + ", ".join(str(r) for r in meta["reasons"]))
+    if meta.get("flagged_input"):
+        parts.append(f"flagged input: {meta['flagged_input']!r}")
+    if meta.get("provider_name"):
+        parts.append(f"provider: {meta['provider_name']}")
+    if meta.get("raw"):
+        parts.append(f"raw: {str(meta['raw'])[:400]}")
+    return " | ".join(parts)
+
+
+def describe_key(api_key: str) -> str:
+    """Ask OpenRouter about the key itself. This is what separates a spend-limit
+    403 ('key limit exceeded') from a moderation / permission 403."""
+    try:
+        resp = requests.get(
+            f"{config.OPENROUTER_BASE_URL}/key",
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=30,
+        )
+    except requests.RequestException as exc:
+        return f"the key lookup itself failed: {exc}"
+    if resp.status_code != 200:
+        return f"the key lookup returned HTTP {resp.status_code}: {resp.text[:300]}"
+    d = (resp.json() or {}).get("data") or {}
+    return (f"label={d.get('label')!r} usage=${d.get('usage')} limit={d.get('limit')} "
+            f"limit_remaining={d.get('limit_remaining')} "
+            f"free_tier={d.get('is_free_tier')} rate_limit={d.get('rate_limit')}")
+
+
+def report_api_error(resp: requests.Response, api_key: str) -> None:
+    """Print everything needed to tell the 4xx cases apart – the bare
+    raise_for_status() used to throw the response body away."""
+    request_id = resp.headers.get("x-request-id") or resp.headers.get("x-openrouter-id") or "n/a"
+    print(f"OpenRouter error: HTTP {resp.status_code} (request id: {request_id})")
+    print(f"  reason: {error_reason(resp)}")
+    print(f"  model: {config.MODEL}")
+    if resp.status_code in (401, 402, 403):
+        print(f"  key status: {describe_key(api_key)}")
+    if resp.status_code == 403:
+        print("  403 on OpenRouter = insufficient permission, guardrail block or moderation flag.")
+        print("  Check in order: spend limit on the key (openrouter.ai/keys), the account's")
+        print("  privacy / data policy settings for this model (openrouter.ai/settings/privacy),")
+        print("  and the 'reason' line above for a moderation hit.")
 
 
 def log_search_debug(data: dict) -> None:
@@ -190,6 +331,125 @@ def parse_json_array(text: str) -> list[dict]:
 
 
 # --------------------------------------------------------------------------- #
+# 1b. Link quality filter
+# --------------------------------------------------------------------------- #
+# A URL survives only if it identifies a single opportunity. It is dropped when
+# it is (a) on a known aggregator domain, (b) a portal homepage, (c) a
+# news/press/blog article, or (d) a search/category/listing page with no item
+# identifier. The rule tables live in config.py.
+
+HAS_DIGIT_RE = re.compile(r"\d")
+
+
+def normalized_url(url: str) -> str:
+    """Host + path + query, lowercased, without scheme/www/trailing slash – so
+    that the same page written two ways compares equal."""
+    parts = urlsplit((url or "").strip().lower())
+    host = parts.netloc.split("@")[-1].split(":")[0].removeprefix("www.")
+    tail = f"?{parts.query}" if parts.query else ""
+    return f"{host}{parts.path.rstrip('/')}{tail}"
+
+
+MONITORED_LANDING_URLS = {normalized_url(s["url"]) for s in config.MONITORED_SOURCES}
+
+
+def has_identifier(parts: SplitResult) -> bool:
+    """True if the URL pins down a single item: either a query string (e.g.
+    ?resourceId=8237157, ?callIdentifier=DIGITAL-2026-SKILLS-10) or a path
+    segment carrying a number (notice/121172-2026, /Notice/010767-2026)."""
+    if parts.query:
+        return True
+    return any(HAS_DIGIT_RE.search(seg) for seg in parts.path.split("/") if seg)
+
+
+def reject_reason(url: str) -> str | None:
+    """Why this URL must not be reported – or None if it is a concrete
+    opportunity page."""
+    parts = urlsplit((url or "").strip())
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        return "not a valid http(s) link"
+
+    host = parts.netloc.lower().split("@")[-1].split(":")[0].removeprefix("www.")
+    for domain in config.AGGREGATOR_DOMAINS:
+        if host == domain or host.endswith(f".{domain}"):
+            return f"aggregator / news site ({domain}), not the call's own page"
+
+    path = parts.path.lower()
+    segments = [s for s in path.split("/") if s]
+    if not segments or all(s in config.LANG_SEGMENTS for s in segments):
+        return "portal homepage, not a specific call"
+
+    for pattern in config.NEWS_PATH_PATTERNS:
+        if pattern in path:
+            return f"news / blog article ('{pattern}'), not the call's own page"
+
+    if not has_identifier(parts):
+        listing = next((s for s in segments if s in config.LISTING_PATH_KEYWORDS), None)
+        if listing:
+            return f"search / listing page ('{listing}') without a specific call"
+        if normalized_url(url) in MONITORED_LANDING_URLS:
+            return "monitored source landing page, not a specific call"
+    return None
+
+
+def host_of(url: str) -> str:
+    return urlsplit((url or "").strip()).netloc.lower().split("@")[-1].split(":")[0].removeprefix("www.")
+
+
+def is_official_eu_host(host: str) -> bool:
+    return any(host == d or host.endswith(f".{d}") for d in config.OFFICIAL_EU_DOMAINS)
+
+
+def is_eu_level_call(item: dict) -> bool:
+    """True if the item describes a call of an EU programme – either because it
+    carries a programme call identifier (DIGITAL-2026-SKILLS-10), or because the
+    model filed it under "eu" and named an EU programme."""
+    blob = " ".join(str(item.get(f, "")) for f in ("title", "program", "summary"))
+    if any(re.search(p, blob, re.I) for p in config.EU_CALL_ID_PATTERNS):
+        return True
+    if (item.get("category") or "").strip().lower() != "eu":
+        return False
+    return any(m in blob.lower() for m in config.EU_PROGRAMME_MARKERS)
+
+
+def reject_item(item: dict) -> str | None:
+    """Why this result must not be reported – URL rules first, then the
+    EU-call-from-a-secondary-source rule."""
+    url = item.get("url", "")
+    reason = reject_reason(url)
+    if reason:
+        return reason
+    if is_eu_level_call(item) and not is_official_eu_host(host_of(url)):
+        return ("EU-level call reported from a secondary source – link its own "
+                "page on an official EU domain instead")
+    return None
+
+
+def filter_items(items: list[dict], label: str = "results") -> list[dict]:
+    """Drop every item that is not a concrete opportunity page from a primary
+    source, and print what went and why – that log is how AGGREGATOR_DOMAINS in
+    config.py gets extended when a new offender shows up."""
+    kept, dropped, seen_urls = [], [], set()
+    for it in items:
+        reason = reject_item(it)
+        if not reason:
+            url = normalized_url(it.get("url", ""))
+            if url in seen_urls:
+                # Two results on one URL: the archive is keyed by URL, so the
+                # second would silently overwrite the first. Seen when the model
+                # links two DIGITAL-2026-SKILLS-10 topics to the same call PDF.
+                reason = "duplicate URL – another result in this run already uses it"
+            else:
+                seen_urls.add(url)
+        (dropped if reason else kept).append((it, reason))
+    if dropped:
+        print(f"Filtered out {len(dropped)} of {len(items)} {label} (not a specific opportunity):")
+        for it, reason in dropped:
+            print(f"  - {it.get('url', '')} — {reason}")
+    return [it for it, _ in kept]
+
+
+# --------------------------------------------------------------------------- #
 # 2. Dedup
 # --------------------------------------------------------------------------- #
 def key_of(item: dict) -> str:
@@ -236,7 +496,8 @@ def update_archive(items: list[dict]) -> None:
     today = dt.date.today().isoformat()
     archive: dict[str, dict] = {}
     if ARCHIVE_FILE.exists():
-        for entry in json.loads(ARCHIVE_FILE.read_text(encoding="utf-8")).get("items", []):
+        stored = json.loads(ARCHIVE_FILE.read_text(encoding="utf-8")).get("items", [])
+        for entry in filter_items(stored, "archived items"):
             archive[key_of(entry)] = entry
     for it in items:
         k = key_of(it)
@@ -320,10 +581,42 @@ def notify_email(new_items: list[dict], digest_path: Path) -> None:
 
 
 # --------------------------------------------------------------------------- #
+def prune_stored_items() -> None:
+    """Re-run the link filter over everything already stored (dashboard data,
+    archive, dedup state) and drop what no longer qualifies. Needed once after a
+    filter-rule change, so aggregator pages found by earlier runs disappear from
+    the dashboard without waiting for the weekly run. No model call, no cost."""
+    for path, key in ((DATA_FILE, "items"), (ARCHIVE_FILE, "items")):
+        if not path.exists():
+            continue
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload[key] = filter_items(payload.get(key, []), f"{path.name} entries")
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    if SEEN_FILE.exists():
+        seen = json.loads(SEEN_FILE.read_text(encoding="utf-8"))
+        kept = {u: d for u, d in seen.items() if not reject_reason(u)}
+        if len(kept) != len(seen):
+            print(f"seen.json: {len(seen) - len(kept)} rejected URL(s) removed.")
+        save_seen(kept)
+    print("Pruning done.")
+
+
 def main() -> None:
+    if "--prune" in sys.argv:
+        prune_stored_items()
+        return
+
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
         raise SystemExit("The OPENROUTER_API_KEY environment variable is missing.")
+
+    # `python tender_watcher.py --diagnose` only asks about the key – no model
+    # call, no cost. Use it when a run dies on 401/402/403.
+    if "--diagnose" in sys.argv:
+        print(f"Key status: {describe_key(api_key)}")
+        print(f"Configured model: {config.MODEL}")
+        return
 
     items = fetch_opportunities(api_key)
     if not items:

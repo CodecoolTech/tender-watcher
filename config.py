@@ -50,6 +50,165 @@ SEARCH_SEGMENTS = [
     "digital academy szolgáltatást keresnek beszállítótól",
 ]
 
+# --- Explicitly monitored sources -------------------------------------------
+# Portals to watch on EVERY run. These are ENTRY POINTS, not results:
+# the watcher must drill down from them to the individual call /
+# notice page. The landing pages themselves are rejected by the link filter
+# below, so they can never end up in a digest.
+#
+# "item_hint" tells the model what a concrete item URL looks like on that
+# portal, so it knows when it has drilled down far enough.
+MONITORED_SOURCES = [
+    {
+        "name": "EKR – közbeszerzési hirdetmények (HU)",
+        "url": "https://ekr.gov.hu/portal/kozbeszerzes/hirdetmenyek",
+        # Note: the EKR notice pages are a JavaScript app – search engines cannot
+        # read them, so a concrete EKR link is rarely reachable. Hungarian
+        # above-threshold notices are also published on TED, which IS readable.
+        "item_hint": "egy konkrét eljárás oldala (ekr.gov.hu/eljarastar/eljaras/EKR<azonosító>); "
+                     "ha az nem elérhető, ugyanannak az eljárásnak a TED-hirdetménye",
+    },
+    {
+        "name": "TED – Tenders Electronic Daily (EU)",
+        "url": "https://ted.europa.eu/hu/",
+        "item_hint": "egy konkrét hirdetmény: ted.europa.eu/…/notice/<szám>-<év>",
+    },
+    {
+        "name": "tendigo – Weiterbildung / képzési kiírások (DE)",
+        "url": "https://tendigo.de/ausschreibungen/weiterbildung",
+        "item_hint": "egy konkrét Ausschreibung aloldala, nem a 'weiterbildung' listaoldal",
+    },
+    {
+        "name": "HADEA – Digital Europe call-bejelentések (EU)",
+        "url": "https://hadea.ec.europa.eu/news/new-calls-proposals-under-digital-europe-programme-published-2026-04-10_en",
+        "item_hint": "a hírben felsorolt EGYES call-ok saját oldala: hadea.ec.europa.eu/calls-proposals/… "
+                     "vagy az EU Funding & Tenders Portal topic-details oldala",
+    },
+]
+
+# --- Link quality filter -----------------------------------------------------
+# Aggregator, news and listing pages that do not point at
+# ONE concrete opportunity must never be reported. This is enforced in code
+# (tender_watcher.py -> reject_reason), not only in the prompt, because the
+# model repeatedly ignored the soft instruction.
+
+# Sites that only ever write ABOUT calls (grant-consultant blogs, tender news
+# aggregators). Never a primary source – always dropped. Extend this list as
+# new offenders show up in the "filtered out" section of the run log.
+AGGREGATOR_DOMAINS = [
+    "palyazatmenedzser.hu",
+    "palyaz.hu",
+    "palyazatokabc.hu",
+    "socialpro.hu",
+    "dft.hu",
+    "acridnetwork.com",
+    "oferent.com.pl",
+    "atlasprzetargow.pl",
+    "it-ausschreibung.de",
+    "openprocurements.com",
+]
+
+# Path fragments that mark a news / press / blog article rather than a call page.
+# This is what drops e.g. hadea.ec.europa.eu/news/… – an official domain, but a
+# news post that only announces that calls exist.
+NEWS_PATH_PATTERNS = [
+    "/news/", "/news-", "/latest/news", "/press", "/newsroom",
+    "/hirek/", "/hir/", "/hirado", "/sajtokozlemeny", "/aktualitasok",
+    "/blog/", "/article/", "/articles/", "/cikk/", "/nachrichten/", "/aktuelles/",
+]
+
+# Path segments that mark a search / category / listing page. Such a URL is only
+# rejected when it carries NO item identifier (see has_identifier), so
+# ".../ausschreibungen/weiterbildung" is dropped but ".../ausschreibungen/12345"
+# is kept.
+LISTING_PATH_KEYWORDS = {
+    "ausschreibungen", "hirdetmenyek", "hirdetmeny", "kozbeszerzes",
+    "przetargi", "tenders", "tender", "opportunities", "opportunity",
+    "calls", "call-for-proposals", "calls-for-proposals", "palyazatok",
+    "search", "kereses", "suche", "recherche", "szukaj",
+    "kategoria", "kategorie", "category", "branza", "keyword", "cimke", "tag",
+    "buyer", "buyers", "list", "lista", "deadlines", "archive", "archivum",
+}
+
+# An EU-level call must be reported from its OWN official page. A national
+# contact point's or a consultant's summary of the same call is second-hand –
+# same complaint as with the aggregators, just on a respectable domain. This is
+# what rejects e.g. www.ffg.at/en/europe/dep/calls/SO4_2026_2 (the Austrian NCP
+# writing about DIGITAL-2026-SKILLS-10) in favour of the HaDEA / Funding &
+# Tenders Portal page for the same call.
+OFFICIAL_EU_DOMAINS = ["europa.eu"]   # covers ec.europa.eu, hadea.ec.europa.eu, eacea…
+
+# Call identifiers of EU programmes. A result carrying one of these is an
+# EU-level call whatever the model put in "category", so it must live on an
+# official domain.
+EU_CALL_ID_PATTERNS = [
+    r"\bDIGITAL-20\d\d-", r"\bERASMUS-[A-Z]+-20\d\d-", r"\bHORIZON-",
+    r"\bCERV-20\d\d-", r"\bLIFE-20\d\d-", r"\bCEF-20\d\d-", r"\bEU4H-20\d\d-",
+]
+
+# Programme names. These only count together with category == "eu" – on their own
+# they would also catch a national call co-financed by the programme, which is
+# legitimately reported from its national page.
+EU_PROGRAMME_MARKERS = [
+    "digital europe programme", "erasmus+", "erasmus plus", "horizon europe",
+    "creative europe", "eacea", "hadea", "esf+", "european social fund plus",
+]
+
+# Two-letter language prefixes, so that e.g. https://ted.europa.eu/hu/ counts as
+# a portal homepage rather than as a specific page.
+LANG_SEGMENTS = {
+    "en", "hu", "de", "fr", "it", "es", "pl", "cs", "sk", "ro", "fi", "sv",
+    "no", "da", "nl", "pt", "el", "bg", "hr", "sl", "et", "lv", "lt", "ga", "mt",
+}
+
+# --- TED direct API ----------------------------------------------------------
+# TED is queried, not searched: see ted_source.py for why. The model's web
+# searches are freed up for the segments that have no API.
+TED_API_URL = "https://api.ted.europa.eu/v3/notices/search"
+TED_LOOKBACK_DAYS = 30         # how far back to look for notices
+TED_MAX_CANDIDATES = 40        # how many open notices are handed to the model
+TED_MAX_PAGES = 8              # safety stop on paging (100 notices per page)
+
+# Only open opportunities: contract notices, prior information and qualification
+# systems. Award notices (can-*) are already decided, so they are excluded.
+TED_NOTICE_TYPES = ["cn-standard", "cn-social", "pin-only", "qu-sy"]
+
+# CPV codes that ARE digital/IT training – every open notice counts as a candidate.
+TED_CPV_IT_TRAINING = [
+    "80420000",   # e-learning services
+    "80533000",   # computer-user training
+    "80533100",   # computer training services
+    "80533200",   # computer courses
+    "80531200",   # technical training services
+]
+
+# Broader training CPVs – huge volume (driving schools, fire safety, language
+# courses), so a notice here only counts if its text mentions something digital.
+TED_CPV_GENERAL_TRAINING = [
+    "80400000",   # adult and other education services
+    "80500000",   # training services
+    "80510000",   # specialist training services
+    "80511000",   # staff training services
+    "80530000",   # vocational training services
+    "80532000",   # management training services
+]
+
+# TED titles read "Country - <main CPV label> - <buyer's own title>", and we ask
+# for the Hungarian rendering, so these words in the middle label mark a notice
+# that is genuinely ABOUT training rather than one that merely carries a
+# training CPV next to a hardware purchase.
+TED_TRAINING_TITLE_WORDS = ["képzés", "oktatás", "tanfolyam", "továbbképz", "e-learning", "tananyag"]
+
+# Multilingual – the notice title/description is in the buyer's own language.
+TED_DIGITAL_KEYWORDS = [
+    "digital", "digitál", "digitale", "digitalis", "cyfrow", "numérique", "numerique",
+    "informati", "informatyk", "it-", " it ", "ict", "computer", "komputer",
+    "számítógép", "szoftver", "software", "programoz", "programming", "programista",
+    "coding", "kódol", "e-learning", "elearning", "online", "webfejleszt", "web development",
+    "cyber", "kiber", "cyberbezpiecz", "adatbázis", "database", "cloud", "felhő",
+    "mesterséges intelligencia", "artificial intelligence", " ai ", "edv", "schulung it",
+]
+
 # --- OpenRouter / model / run settings ---------------------------------------
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
@@ -58,6 +217,11 @@ MODEL = "anthropic/claude-sonnet-5"   # good value for money; for something stro
 # Web search (openrouter:web_search server tool) settings:
 MAX_RESULTS_PER_SEARCH = 5     # max. results per single search (Exa engine); 1–25
 MAX_SEARCHES = 12              # how many searches the model may run in one pass (max_uses)
+                               # Measured: 12 searches = 204k prompt tokens / $0.67 per run,
+                               # 16 = 389k / $1.05. The results do not get better with 16 – the
+                               # search results pile up in the context, so cost grows faster than
+                               # the search count and the model's synthesis gets NARROWER, not
+                               # wider. Do not raise this without measuring the item count too.
 MAX_TOTAL_RESULTS = 60         # upper bound on all results in one pass (cost / context limit)
                                # 12 searches × 5 results – needed for full market coverage; lower it if too expensive
 

@@ -2,19 +2,6 @@
   "updated": "2026-09-14",
   "items": [
     {
-      "title": "Digital Europe Programme SO4 – Advanced Digital Skills (10th call) – FFG összefoglaló",
-      "url": "https://www.ffg.at/en/europe/dep/calls/SO4_2026_2",
-      "category": "eu",
-      "program": "Digital Europe Programme",
-      "budget": "min. 100 000 EUR nemzeti társfinanszírozás",
-      "deadline": "2026-10-01",
-      "deadline_text": "2026. október 1.",
-      "relevance": "high",
-      "summary": "Az Advanced Digital Skills (SO4) prioritás célja a kulcsfontosságú digitális technológiák oktatási kínálatának bővítése és a tehetségek/fejlett készségek promóciója – pontosan a Codecool alaptevékenysége.",
-      "is_new": true,
-      "first_seen": "2026-09-14"
-    },
-    {
       "title": "RM6219 – Learning and Training Services (Dynamic Purchasing System)",
       "url": "https://www.crowncommercial.gov.uk/agreements/RM6219",
       "category": "tender",
@@ -91,58 +78,6 @@
       "summary": "Ír közintézményi tender kurzus-/tantervfejlesztési szolgáltatásra – releváns lehet Codecool tartalomfejlesztési vagy tanterv-tervezési kompetenciájának bemutatására.",
       "is_new": true,
       "first_seen": "2026-09-14"
-    },
-    {
-      "title": "DIGITAL-2026-SKILLS-10 – Advanced Digital Skills (AI Health, National Coalitions, EdTech Accelerator)",
-      "url": "https://hadea.ec.europa.eu/news/new-calls-proposals-under-digital-europe-programme-published-2026-04-10_en",
-      "category": "eu",
-      "program": "Digital Europe Programme (DIGITAL)",
-      "budget": "~12,5 millió EUR (3 téma összesen)",
-      "deadline": "2026-10-01",
-      "deadline_text": "2026. október 1. 17:00 (brüsszeli idő)",
-      "relevance": "high",
-      "summary": "Az EdTech-akcelerátor és a National Coalitions témák közvetlenül relevánsak a Codecool EdTech/digitális készségfejlesztő profiljához; az AI Health topik pedig AI-alapú képzési programok fejlesztését finanszírozza.",
-      "is_new": false,
-      "first_seen": "2026-07-23"
-    },
-    {
-      "title": "\"Esély a digitális tudásra\" (DIMOP_PLUSZ-4.2.9-25) – Széchenyi Terv Plusz",
-      "url": "https://www.palyazat.gov.hu",
-      "category": "hu",
-      "program": "Széchenyi Terv Plusz / DIMOP Plusz",
-      "budget": "",
-      "deadline": "",
-      "deadline_text": "Folyamatosan módosuló, aktív felhívás – pontos zárási dátum a palyazat.gov.hu oldalon ellenőrizendő",
-      "relevance": "med",
-      "summary": "Magyar digitális kompetenciafejlesztő program, amelynek dokumentációja és költségvetési struktúrája 2026-ban is aktívan frissül – releváns lehet Codecool HU-piaci képzési partnerségekhez.",
-      "is_new": false,
-      "first_seen": "2026-07-23"
-    },
-    {
-      "title": "Rahmenvertrag IT-Schulungen (Software INVARIS) – Deutsche Rentenversicherung Bund",
-      "url": "https://tendigo.de/ausschreibungen/weiterbildung",
-      "category": "tender",
-      "program": "DRV Bund / német szövetségi közbeszerzés",
-      "budget": "",
-      "deadline": "",
-      "deadline_text": "Szerződéses időszak várhatóan 2026.09.01–2032.08.31; a beadási határidő a tendigo/hivatalos vergabeportálon ellenőrizendő. Megjegyzés: ez egy lista/aggregátor oldal, a konkrét hirdetmény linkje ott érhető el.",
-      "relevance": "med",
-      "summary": "A DRV Bund hosszú távú (6 éves) IT-oktatási keretszerződést ír ki egy konkrét szoftverre – szűkebb, de jó példa arra, hogy nagy német közintézmények rendszeresen vásárolnak IT-képzési szolgáltatást.",
-      "is_new": false,
-      "first_seen": "2026-08-13"
-    },
-    {
-      "title": "Betreiber-Konzession 'Bildungsakademie für Bahnberufe' – Landkreis Havelland",
-      "url": "https://tendigo.de/ausschreibungen/weiterbildung",
-      "category": "tender",
-      "program": "Landkreis Havelland / BahnTechnologie Campus Havelland GmbH",
-      "budget": "",
-      "deadline": "",
-      "deadline_text": "Dienstleistungskonzession folyamatban; pontos határidő a tendigo/hivatalos vergabeportálon ellenőrizendő",
-      "relevance": "low",
-      "summary": "Egy teljes szakképzési akadémia (vasúti szakmák) lehívási/koncessziós üzemeltetésére kiírt tender – nem elsődleges profil, de jelzi, hogy nagy VET-intézményi üzemeltetési projektek is elérhetők a német piacon.",
-      "is_new": false,
-      "first_seen": "2026-08-13"
     }
   ]
 }
