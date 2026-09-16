@@ -116,6 +116,13 @@ news pages are dropped by the link filter (`tender_watcher.py` →
 | News / press posts, even on official EU domains | `hadea.ec.europa.eu/news/new-calls-proposals-…` |
 | Portal homepages | `ted.europa.eu/hu/` |
 | Search / category / listing pages | `tendigo.de/ausschreibungen/weiterbildung` |
+| Guides / rulebooks explaining how procurement works | `europa.eu/youreurope/…/public-tendering-rules/` |
+| An EU call linked from a secondary source | `ffg.at/en/europe/dep/calls/SO4_2026_2` |
+
+`config.py` lists the sources that were evaluated and deliberately left out –
+the Közbeszerzési Értesítő (its `robots.txt` disallows the notice paths), BOAMP,
+Bundesanzeiger and the various guide portals – with the reason for each, so the
+question does not need re-researching.
 
 The filter runs both on fresh model output and on the stored archive, so a rule
 change cleans up the dashboard on the next run. Every dropped link is printed in

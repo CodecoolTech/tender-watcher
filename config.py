@@ -86,6 +86,21 @@ MONITORED_SOURCES = [
     },
 ]
 
+# Sources evaluated on 2026-09-16 and deliberately NOT added, so the question
+# does not have to be re-researched:
+#   - Közbeszerzési Értesítő (kozbeszerzes.hu/ertesito, /adatbazis/keres/hirdetmeny):
+#     a real source, but its robots.txt disallows exactly those paths, so search
+#     engines do not index them and a crawler would be going against the site's
+#     stated wishes. Hungarian above-threshold procedures reach TED anyway.
+#   - BOAMP (FR): has a proper open data API, but measured on 2026-09-16 it adds
+#     little – of 20 open training notices, 11 were already on TED and the rest
+#     were driving licences, fire-safety courses and catering.
+#   - Bundesanzeiger (DE): the financial/legal gazette, not a procurement portal.
+#   - Your Europe, Közbeszerzési Kisokos, ProcurCompEU, eProcurement Initiatives:
+#     guides and policy pages, not opportunity sources – see GUIDE_PATH_PATTERNS.
+#   - kozbeszerzes.khf.hu: a commercial monitoring service – an aggregator, and
+#     this watcher is what it would be a paid substitute for.
+
 # --- Link quality filter -----------------------------------------------------
 # Aggregator, news and listing pages that do not point at
 # ONE concrete opportunity must never be reported. This is enforced in code
@@ -96,6 +111,7 @@ MONITORED_SOURCES = [
 # aggregators). Never a primary source – always dropped. Extend this list as
 # new offenders show up in the "filtered out" section of the run log.
 AGGREGATOR_DOMAINS = [
+    "kozbeszerzes.khf.hu",   # commercial procurement-monitoring / BI service
     "palyazatmenedzser.hu",
     "palyaz.hu",
     "palyazatokabc.hu",
@@ -115,6 +131,20 @@ NEWS_PATH_PATTERNS = [
     "/news/", "/news-", "/latest/news", "/press", "/newsroom",
     "/hirek/", "/hir/", "/hirado", "/sajtokozlemeny", "/aktualitasok",
     "/blog/", "/article/", "/articles/", "/cikk/", "/nachrichten/", "/aktuelles/",
+]
+
+# Guide, rulebook and policy pages. They sit on impeccable official domains
+# (europa.eu, kozbeszerzes.hu) and survive every other rule, yet they explain how
+# procurement WORKS instead of naming one opportunity – the same complaint as
+# with the aggregators. Seeded from a source list the client sent on 2026-09-16
+# that was mostly made of these: Your Europe tendering rules, the Közbeszerzési
+# Kisokos, ProcurCompEU, the Commission's eProcurement pages.
+GUIDE_PATH_PATTERNS = [
+    "youreurope", "/public-tendering-rules", "/search-bid-public-tender",
+    "kisokos", "procurcompeu", "/digital-procurement", "/programme-guide",
+    "/utmutato", "/tudastar", "/jogszabaly", "/szabalyoz", "/kisokos",
+    "/guide/", "/guides/", "/faq", "/help/", "/how-to", "/leitfaden",
+    "/ertesito",   # the gazette's own index page – a list of issues, not a notice
 ]
 
 # Path segments that mark a search / category / listing page. Such a URL is only

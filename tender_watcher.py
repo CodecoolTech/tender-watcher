@@ -118,6 +118,9 @@ Szabályok:
       * EU-s vagy hatósági HÍROLDALAK, amelyek csak bejelentik, hogy megjelentek a call-ok, pl.
         https://hadea.ec.europa.eu/news/new-calls-proposals-under-digital-europe-programme-published-2026-04-10_en
         (ilyenkor a hírben felsorolt EGYES call-ok saját oldalát add meg, a hírt magát ne)
+      * ÚTMUTATÓK és szabályozási oldalak, amelyek a közbeszerzés MENETÉT magyarázzák,
+        nem egy konkrét lehetőséget kínálnak, pl. Your Europe „közbeszerzési szabályok",
+        Közbeszerzési Kisokos, ProcurCompEU, Erasmus+ programme guide
       * portál-főoldalak, kereső-, kategória- és listaoldalak, pl.
         https://ted.europa.eu/hu/, https://ekr.gov.hu/portal/kozbeszerzes/hirdetmenyek,
         https://tendigo.de/ausschreibungen/weiterbildung, https://erasmus-plus.ec.europa.eu/opportunities
@@ -382,6 +385,10 @@ def reject_reason(url: str) -> str | None:
     for pattern in config.NEWS_PATH_PATTERNS:
         if pattern in path:
             return f"news / blog article ('{pattern}'), not the call's own page"
+
+    for pattern in config.GUIDE_PATH_PATTERNS:
+        if pattern in path:
+            return f"guide / rulebook page ('{pattern}'), explains procurement instead of offering one"
 
     if not has_identifier(parts):
         listing = next((s for s in segments if s in config.LISTING_PATH_KEYWORDS), None)
