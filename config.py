@@ -11,18 +11,53 @@ prompt, so their text is deliberately kept in Hungarian.
 
 # --- Company profile (drives the relevance filtering) -----------------------
 COMPANY_PROFILE = """
-Cég: Codecool (codecool.com) – IT- és programozásoktatás, coding bootcamp.
-Jelenlét: főként Magyarország és Közép-Kelet-Európa, de EGÉSZ EURÓPÁBAN vállal munkát.
-Alaptevékenység: programozás- és digitális készségképzés, felnőtt- és szakképzés (VET),
-átképzés / reskilling / upskilling, EdTech megoldások, e-learning.
-Célterület a figyeléshez: a TELJES európai piac – minden EU-tagállam, továbbá UK, Norvégia,
-Svájc. Minden típusú lehetőség érdekes: EU-s és nemzeti pályázatok, közbeszerzések
-(állami, önkormányzati/városi), valamint magáncégek beszerzései / képzési tenderei.
-Releváns kulcsszavak: digital skills, advanced digital skills, reskilling, upskilling,
-vocational education and training (VET), programming / coding training, IT training,
-corporate training, e-learning, EdTech, AI in education, AI training, micro-credentials,
-felnőttképzés, informatikai képzés, digitális kompetencia, ajánlattételi felhívás,
-request for proposal (RFP), invitation to tender, beszállítói pályázat.
+Cég: Codecool Kft. (codecool.com) – 2014-ben alapított, budapesti székhelyű, magántulajdonú
+oktatási vállalatcsoport; a közép-kelet-európai régió egyik vezető felnőtt IT- és
+digitáliskészség-fejlesztő szereplője. Magyar felnőttképzési engedéllyel rendelkezik,
+2020 óta E&Y által auditált. 100+ szakértő és tréner, 10+ év működés.
+
+MIT CSINÁL – NÉGY SZOLGÁLTATÁSI ÁG, MINDEGYIK ÖNÁLLÓ LEHETŐSÉGFORRÁS:
+ 1. Képzés, át- és továbbképzés (reskilling / upskilling): 60+ kurzus, 20+ tanulási útvonal,
+    az 1–5 napos szaktanfolyamtól a 12 hónapos, ~1000 órás full-stack átképzésig.
+    Online, jelenléti és hibrid formában, helyi nyelveken is.
+ 2. E-learning tananyagfejlesztés és LMS: saját fejlesztésű, AI-támogatott tanulásirányítási
+    rendszer (Journey), valamint önállóan és oktató által vezetett digitális tananyagok
+    gyártása megrendelésre.
+ 3. Készségfelmérés és képzési tanácsadás: kompetenciamátrix kidolgozása, skills gap analízis,
+    rövid és hosszú távú képzési terv, digitális érettség felmérése, megvalósíthatósági
+    tanulmány, mikrotanúsítványok kibocsátása (egyetemi kreditrendszerrel kompatibilisen).
+ 4. IT-toborzás és munkaerő-biztosítás: szakember-kiválasztás, munkaerő-kölcsönzés, valamint
+    toborzást és képzést egyben nyújtó vállalati akadémia-programok.
+
+SZAKTERÜLETEK: mesterséges intelligencia és gépi tanulás, adat és analitika, felhő (AWS,
+Azure), DevOps (Docker, Kubernetes, Terraform, CI/CD, Ansible, Jenkins), kiberbiztonság,
+full-stack szoftverfejlesztés (Java, Python, JavaScript, React, C#, C++, PHP, Go),
+szoftvertesztelés (manuális és automata), UX/UI, low-code / no-code, Salesforce,
+IT-projektmenedzsment. Az AI készségszintű használata minden képzésbe integrált.
+
+CÉLCSOPORTOK – NEM CSAK IT-SEK: informatikusok és fejlesztők; nem-IKT munkatársak tömeges
+digitális alapkészség-fejlesztése (akár több ezer fő); C-szintű vezetők digitális
+felkészítése; munkanélküliek és pályamódosítók átképzése; hátrányos helyzetű csoportok,
+fogyatékossággal élők, nők IT-pályára segítése. Ezért a LAKOSSÁGI / ÁLLAMPOLGÁRI digitális
+alapkészség-programok is relevánsak, nem csak a szakmai IT-képzés.
+
+FÖLDRAJZ: budapesti székhely; a közép-kelet-európai régióban (Magyarország, Románia,
+Lengyelország, Szlovákia, Csehország, Bulgária, Horvátország, Szlovénia, Ukrajna, Baltikum)
+rendszeres működés, összesen 14+ országban dolgozott már. Egész Európában vállal munkát, a
+régión kívül jellemzően helyi partnerrel vagy konzorciumi tagként.
+
+REFERENCIÁK (ezek mutatják, milyen kiírásra hiteles az ajánlata): Innovációs és Technológiai
+Minisztérium átképzési programjai (750, illetve 400 fő); GINOP Plusz-3.2.1 munkavállalói
+készségfejlesztés; NKFIH K+F projektek (2020-1.1.2-PIACI-KFI, 2023-1.1.1-PIACI_FÓKUSZ);
+European Software Skills Alliance – Erasmus+ konzorcium 21+ partnerrel; Google.org / Centre
+for Public Impact AI-program 10 országban, 4100 fő; Motorola Solutions Akadémia
+(Lengyelország, 7 kiadás); Citibank kiberbiztonsági átképzés; MBH Bank (3000 fő nem-IKT
+program, egyetemi együttműködésben); DSK Bank vezetői digitális akadémia (Bulgária);
+Pomorskie regionális fejlesztési ügynökség (140 fejlesztő képzése).
+
+TIPIKUS MÉRET: 10 fős vezetői csoporttól 4100 fős országos programig; 200–1000 képzési óra;
+néhány tízezer eurótól több százezer eurós szerződésig. Fővállalkozóként és konzorciumi
+partnerként is tud pályázni.
 """
 
 # --- Search segments ---------------------------------------------------------

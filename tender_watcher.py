@@ -101,9 +101,42 @@ Keresési tippek:
     illetve nagyvállalatok "suppliers" / "procurement" / "hirdetmények" / "tenders" aloldalait.
   - Városi és regionális beszerzési oldalak, egyetemek, munkaügyi szervezetek is számítanak.
 
+RELEVANCIA-BESOROLÁS – a "relevance" mezőt EZEK alapján töltsd ki, ne érzésre.
+A besorolás indokát írd bele a summary-be is (1 tagmondat elég).
+
+  high – a cégprofil MAGJÁBA talál:
+     * IT / digitális / AI / adat / felhő / DevOps / kiberbiztonság / szoftverfejlesztés /
+       szoftvertesztelés képzés, át- vagy továbbképzési (reskilling / upskilling) program;
+     * e-learning tananyagfejlesztés, digitális tananyaggyártás, illetve olyan LMS- vagy
+       oktatásiszoftver-beszerzés, ahol a Codecool a SAJÁT platformját (Journey) vagy a
+       tartalmat szállíthatná. NEM high viszont az, ami konkrét idegen terméket nevez meg
+       (pl. Moodle, Canvas, Blackboard), vagy tisztán licenc / hosting / üzemeltetés
+       tartalomfejlesztési és képzési elem nélkül – az med, jellemzően low;
+     * lakossági, közszolgálati vagy vállalati digitális ALAPKÉSZSÉG-program (nem csak
+       IT-seknek szóló képzés is ide tartozik);
+     * digitális készségfejlesztésre szóló EU-s call, amelyre konzorciumi tagként pályázhat.
+     Ha mindezek mellett a kiírás Magyarországon vagy a KKE-régióban van, az a legerősebb
+     eset – a hazai piac és a magyar felnőttképzési engedély miatt.
+
+  med – illeszkedik, de nem a mag:
+     * általános felnőttképzés / szakképzés (VET), amelyben a digitális tartalom másodlagos;
+     * IT-toborzási, szakember-kiválasztási vagy munkaerő-kölcsönzési tender;
+     * készségfelmérés, kompetenciamátrix, képzési terv, digitális érettségfelmérés,
+       megvalósíthatósági tanulmány mint megrendelés;
+     * profilba vágó képzési tender Nyugat- vagy Dél-Európában, ahol jellemzően helyi
+       partner vagy konzorcium kellene hozzá.
+
+  low – csak érintőlegesen kapcsolódik:
+     * nem digitális képzés: nyelvtanfolyam, jogosítvány és járművezetés, tűz- és
+       munkavédelem, egészségügyi, gépkezelői, pedagógus-továbbképzés;
+     * tisztán szoftver-, hardver- vagy licencbeszerzés érdemi képzési elem nélkül;
+     * olyan akkreditációt vagy szakterületet kíván, amivel a Codecool nem rendelkezik.
+     low tételt csak akkor vegyél fel, ha tényleg van benne értékelhető képzési elem –
+     egyébként hagyd ki.
+
 Szabályok:
   - Csak VALÓS, ellenőrzött találatokat adj meg valódi, működő linkkel. Ne találj ki kiírást.
-  - Csak a cégprofilhoz releváns tételeket tartsd meg.
+  - Csak a cégprofilhoz releváns tételeket tartsd meg, a fenti besorolás szerint.
   - LEJÁRT határidejű kiírást ne vegyél fel – a mai dátumhoz ({today}) képest ellenőrizd.
   - EU-s programok (Digital Europe, Erasmus+, Horizon stb.) call-jainál KÖTELEZŐ a hivatalos
     europa.eu oldal (ec.europa.eu topic-details, hadea.ec.europa.eu/calls-proposals, eacea…).
@@ -139,8 +172,8 @@ A válaszod VÉGÉN adj vissza KIZÁRÓLAG egy JSON-tömböt (```json blokkban),
     "budget": "becsült keret vagy '' ",
     "deadline": "ÉÉÉÉ-HH-NN vagy '' ha nincs pontos",
     "deadline_text": "emberi olvasható határidő",
-    "relevance": "high" | "med" | "low",
-    "summary": "1-2 mondat, miért releváns Codecoolnak"
+    "relevance": "high" | "med" | "low",   // a fenti RELEVANCIA-BESOROLÁS szerint
+    "summary": "1-2 mondat: miért releváns Codecoolnak, és mi indokolja a besorolást"
   }}
 ]
 Csak a JSON-tömböt add a záró blokkban, más szöveget ne tegyél utána."""
