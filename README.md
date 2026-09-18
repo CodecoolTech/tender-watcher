@@ -78,6 +78,33 @@ the notifications.
 
 After that it runs by itself every **Monday morning**.
 
+## Where the opportunities come from
+
+Two official APIs are queried directly, and the model's web searches cover what
+has no API:
+
+| Source | Module | What it adds |
+|---|---|---|
+| TED | `ted_source.py` | EU-wide procurement above the EU threshold |
+| e-Zamówienia (PL) | `ezamowienia_source.py` | Polish procurement, mostly **below** the EU threshold — invisible to TED |
+| everything else | web search | grants, corporate RFPs, below-threshold notices elsewhere |
+
+Poland gets its own module because it is a real market for Codecool and
+practically every open Polish training notice is below the EU threshold, so TED
+never carries it. Measured on 2026-09-18, it added 5 results in one run, 3 of
+them graded `high` — regional cybersecurity training for public officials,
+citizen digital-literacy workshops, IT security training for government staff.
+
+Two other Polish portals were asked for and **not** built on:
+
+- **Baza Konkurencyjności** — unique content (EU-funded beneficiaries publish
+  procurements there that reach no other portal), but every `/api/` endpoint
+  answers 401 behind Keycloak and the swagger URL just serves the SPA shell.
+  There is no public interface to build on, so it is a web-search entry point.
+- **platformazakupowa.pl** — no API, and its `robots.txt` asks for a 900-second
+  crawl delay. Its notices also largely reappear in the BZP feed that
+  `ezamowienia_source.py` already reads. Web-search entry point as well.
+
 ## How TED is covered
 
 TED is **queried, not searched**. `ted_source.py` calls the official TED API

@@ -142,6 +142,20 @@ MONITORED_SOURCES = [
         "item_hint": "egy konkrét Ausschreibung aloldala, nem a 'weiterbildung' listaoldal",
     },
     {
+        "name": "Baza Konkurencyjności – EU-forrásból finanszírozott beszerzések (PL)",
+        "url": "https://bazakonkurencyjnosci.funduszeeuropejskie.gov.pl/ogloszenia/szukaj",
+        # No public API: every /api/ endpoint is 401 behind Keycloak, so this one
+        # can only be reached by search. Its content is unique though – EU-funded
+        # beneficiaries publish training procurements here that reach no other portal.
+        "item_hint": "egy konkrét ogłoszenie saját oldala (…/ogloszenia/<azonosító>), nem a keresőoldal",
+    },
+    {
+        "name": "platformazakupowa.pl – lengyel e-beszerzési platform",
+        "url": "https://platformazakupowa.pl/",
+        # No API, and robots.txt asks for a 900 s crawl delay – search only.
+        "item_hint": "egy konkrét transakcja oldala (platformazakupowa.pl/transakcja/<szám>)",
+    },
+    {
         "name": "HADEA – Digital Europe call-bejelentések (EU)",
         "url": "https://hadea.ec.europa.eu/news/new-calls-proposals-under-digital-europe-programme-published-2026-04-10_en",
         "item_hint": "a hírben felsorolt EGYES call-ok saját oldala: hadea.ec.europa.eu/calls-proposals/… "
@@ -355,6 +369,43 @@ TED_DIGITAL_KEYWORDS = [
     "coding", "kódol", "e-learning", "elearning", "online", "webfejleszt", "web development",
     "cyber", "kiber", "cyberbezpiecz", "adatbázis", "database", "cloud", "felhő",
     "mesterséges intelligencia", "artificial intelligence", " ai ", "edv", "schulung it",
+]
+
+# --- e-Zamówienia (PL) direct API --------------------------------------------
+# Polish public procurement, and crucially the BELOW-EU-THRESHOLD notices that
+# never reach TED. Poland is a real market for Codecool, so this is the one
+# addition of the three Polish portals suggested on 2026-09-18 that has a usable
+# public interface. See ezamowienia_source.py for why the other two do not.
+EZAM_API_URL = "https://ezamowienia.gov.pl/mo-board/api/v1/Board/Search"
+EZAM_LOOKBACK_DAYS = 30
+EZAM_MAX_CANDIDATES = 10       # how many Polish notices are handed to the model
+EZAM_MAX_PAGES = 6             # the API returns 10 records per page, hard-capped
+
+EZAM_CPV_CODES = [
+    "80500000",   # usługi szkoleniowe – training services
+    "80510000",   # specialist training
+    "80511000",   # staff training
+    "80530000",   # vocational training
+    "80533100",   # computer training
+    "80420000",   # e-learning
+    "72212190",   # educational software development
+]
+
+# The subject line must ALSO say this is training. Without it the training CPV
+# codes drag in hardware and system rollouts that merely carry an 80533100 code
+# on the side – measured 2026-09-18: of 10 candidates, 5 were waterworks cyber
+# systems, lab software and equipment delivery. Same lesson as the TED titles.
+EZAM_TRAINING_WORDS = [
+    "szkolen", "szkoleń", "szkolenie", "kurs", "warsztat", "edukac",
+    "nauczan", "kompetencj", "e-learning", "doskonalen", "podnoszenie kwalifikacji",
+]
+
+# Polish terms on top of TED_DIGITAL_KEYWORDS – the subject lines here are
+# Polish only, and these are the words that mark an IT/digital tender.
+EZAM_EXTRA_KEYWORDS = [
+    "informatyczn", "cyfrow", "komputerow", "programowani", "oprogramowani",
+    "cyberbezpiecz", "sieci", "chmur", "sztucznej inteligencji", "e-usług",
+    "szkolenia it", "kompetencji cyfrowych", "system informatyczny",
 ]
 
 # --- OpenRouter / model / run settings ---------------------------------------

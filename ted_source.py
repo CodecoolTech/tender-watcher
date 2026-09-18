@@ -50,6 +50,7 @@ def fetch_candidates() -> list[dict]:
                  if n["publication_number"] not in picked]
         for notice in fresh[:group["quota"]]:
             notice["group"] = group["label"]
+            notice["cpv_label"] = ", ".join(matched_cpvs(notice))
             picked[notice["publication_number"]] = notice
         print(f"TED · {group['label']}: {len(found)} open, "
               f"{min(len(fresh), group['quota'])} handed over (quota {group['quota']}).")
@@ -121,6 +122,7 @@ def _normalize(raw: dict) -> dict | None:
         "buyer": _pick_lang(raw.get("buyer-name")),
         "country": (raw.get("buyer-country") or [""])[0],
         "cpv": sorted(set(raw.get("classification-cpv") or [])),
+        "cpv_label": "",   # filled in once the group's CPVs are known
         "deadline": _first_date(raw.get("deadline-receipt-tender-date-lot")),
         "published": _first_date([raw.get("publication-date")]),
         # The human-readable notice page. It renders in a browser; the /pdf
@@ -189,17 +191,3 @@ def _ranking_key(item: dict) -> tuple[int, str]:
     would push the real training tenders past the MAX_CANDIDATES cut-off. Within
     a group, nearest deadline first; no deadline last."""
     return (0 if _is_core_training(item) else 1, item["deadline"] or "9999-12-31")
-
-
-def format_for_prompt(candidates: list[dict]) -> str:
-    lines = []
-    for n, c in enumerate(candidates, 1):
-        deadline = c["deadline"] or "nincs megadott határidő"
-        lines.append(
-            f"  [{n}] {c['publication_number']} · {c['country']} · határidő: {deadline}\n"
-            f"      kategória: {c.get('group', 'n/a')} · CPV: {', '.join(matched_cpvs(c)) or 'n/a'}\n"
-            f"      {c['title']}\n"
-            f"      Ajánlatkérő: {c['buyer'] or 'n/a'}\n"
-            f"      {c['url']}"
-        )
-    return "\n".join(lines)

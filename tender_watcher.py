@@ -32,6 +32,7 @@ from urllib.parse import SplitResult, urlsplit
 import requests
 
 import config
+import ezamowienia_source
 import ted_source
 
 ROOT = Path(__file__).parent
@@ -195,10 +196,11 @@ def _ted_prompt_block(candidates: list[dict]) -> str:
     Empty (API down / nothing open) -> the prompt simply does not mention TED."""
     if not candidates:
         return ""
-    listing = ted_source.format_for_prompt(candidates)
+    listing = format_candidates(candidates)
     return f"""
-NYITOTT TED-KÖZBESZERZÉSEK ({len(candidates)} db) – ezeket KÉSZEN KAPOD a TED hivatalos
-API-jából, NEM kell rájuk keresned. Mind nyitott határidejű és ellenőrzött:
+NYITOTT KÖZBESZERZÉSEK ({len(candidates)} db) – ezeket KÉSZEN KAPOD hivatalos API-kból
+(TED, illetve a lengyel e-Zamówienia), NEM kell rájuk keresned. Mind nyitott határidejű
+és ellenőrzött. A lengyel tételek zöme EU-küszöb ALATTI, tehát a TED-en nincs is fent:
 {listing}
 
 Mit kezdj velük:
@@ -207,11 +209,32 @@ Mit kezdj velük:
     "tender" kategóriával, PONTOSAN a fenti URL-lel és határidővel.
   - A nem relevánsakat (pl. tűzvédelmi oktatás, jogosítvány, nyelvtanfolyam) hagyd ki –
     ne magyarázkodj miattuk.
-  - Mivel a TED-et így már lefedtük, a web-search kereséseidet a TÖBBI szegmensre fordítsd:
+  - Mivel a TED-et és a lengyel e-Zamówieniát így már lefedtük, a web-search kereséseidet
+    a TÖBBI szegmensre fordítsd:
     EU-s és magyar pályázatok, városi/önkormányzati beszerzések, és kiemelten a
     céges/magánszektor tenderek.
 
 """
+
+
+def format_candidates(candidates: list[dict]) -> str:
+    """One listing for every API-sourced candidate, whichever portal it came from."""
+    lines = []
+    for n, c in enumerate(candidates, 1):
+        deadline = c["deadline"] or "nincs megadott határidő"
+        lines.append(
+            f"  [{n}] {c['publication_number']} · {c['country']} · határidő: {deadline}\n"
+            f"      kategória: {c.get('group', 'n/a')} · CPV: {c.get('cpv_label') or 'n/a'}\n"
+            f"      {c['title']}\n"
+            f"      Ajánlatkérő: {c['buyer'] or 'n/a'}\n"
+            f"      {c['url']}"
+        )
+    return "\n".join(lines)
+
+
+def collect_candidates() -> list[dict]:
+    """Everything the official APIs can give us, before the model sees anything."""
+    return ted_source.fetch_candidates() + ezamowienia_source.fetch_candidates()
 
 
 def fetch_opportunities(api_key: str) -> list[dict]:
@@ -223,7 +246,7 @@ def fetch_opportunities(api_key: str) -> list[dict]:
     }
     body = {
         "model": config.MODEL,
-        "messages": [{"role": "user", "content": build_prompt(ted_source.fetch_candidates())}],
+        "messages": [{"role": "user", "content": build_prompt(collect_candidates())}],
         "max_tokens": config.MAX_OUTPUT_TOKENS,
         "tools": [{
             "type": "openrouter:web_search",
