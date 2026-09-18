@@ -29,32 +29,40 @@ LANG_PREFERENCE = ("hun", "eng", "deu", "fra")
 
 
 def fetch_candidates() -> list[dict]:
-    """Open, relevant TED notices, soonest deadline first.
+    """Open, relevant TED notices – each service line with its own quota.
+
+    Quotas matter: training notices outnumber the rest by an order of magnitude,
+    so a single deadline-ordered list would never reach an e-learning platform
+    or an IT recruitment tender. Each group is filled independently.
 
     Never raises: TED being slow or down must not kill the weekly run – the
     watcher then falls back to web search alone, with a line in the log.
     """
-    try:
-        notices = _search(config.TED_CPV_IT_TRAINING, digital_only=False)
-        notices += _search(config.TED_CPV_GENERAL_TRAINING, digital_only=True)
-    except (requests.RequestException, ValueError) as exc:
-        print(f"TED API unavailable ({exc}) – this run relies on web search alone.")
-        return []
+    picked: dict[str, dict] = {}
+    for group in config.TED_GROUPS:
+        try:
+            found = _search(group["cpv"], digital_only=group["digital_only"],
+                            title_only=group.get("digital_in_title_only", False))
+        except (requests.RequestException, ValueError) as exc:
+            print(f"TED group '{group['key']}' unavailable ({exc}) – skipped.")
+            continue
+        fresh = [n for n in sorted(found, key=_ranking_key)
+                 if n["publication_number"] not in picked]
+        for notice in fresh[:group["quota"]]:
+            notice["group"] = group["label"]
+            picked[notice["publication_number"]] = notice
+        print(f"TED · {group['label']}: {len(found)} open, "
+              f"{min(len(fresh), group['quota'])} handed over (quota {group['quota']}).")
 
-    unique: dict[str, dict] = {}
-    for n in notices:
-        unique.setdefault(n["publication_number"], n)
-    candidates = sorted(unique.values(), key=_ranking_key)
-    if len(candidates) > config.TED_MAX_CANDIDATES:
-        print(f"TED: {len(candidates)} open notices, passing the {config.TED_MAX_CANDIDATES} "
-              f"with the nearest deadline to the model.")
-        candidates = candidates[:config.TED_MAX_CANDIDATES]
-    else:
-        print(f"TED: {len(candidates)} open notice(s) handed to the model.")
+    if not picked:
+        print("TED: no open notice found – this run relies on web search alone.")
+        return []
+    candidates = sorted(picked.values(), key=_ranking_key)
+    print(f"TED: {len(candidates)} notice(s) handed to the model.")
     return candidates
 
 
-def _search(cpv_codes: list[str], digital_only: bool) -> list[dict]:
+def _search(cpv_codes: list[str], digital_only: bool, title_only: bool = False) -> list[dict]:
     """One paged query for a CPV group. `digital_only` keeps the broad training
     codes usable: a fire-safety or driving course is dropped, an IT one is not."""
     query = (
@@ -76,7 +84,7 @@ def _search(cpv_codes: list[str], digital_only: bool) -> list[dict]:
         notices = data.get("notices") or []
         for raw in notices:
             item = _normalize(raw)
-            if item and _is_open(item) and (not digital_only or _mentions_digital(item)):
+            if item and _is_open(item) and (not digital_only or _mentions_digital(item, title_only)):
                 out.append(item)
         if len(notices) < 100:
             break
@@ -151,15 +159,15 @@ def _is_open(item: dict) -> bool:
     return item["deadline"] >= dt.date.today().isoformat()
 
 
-def _mentions_digital(item: dict) -> bool:
-    blob = f"{item['title']} {item['description']}".lower()
-    return any(k in blob for k in config.TED_DIGITAL_KEYWORDS)
+def _mentions_digital(item: dict, title_only: bool = False) -> bool:
+    blob = item["title"] if title_only else f"{item['title']} {item['description']}"
+    return any(k in blob.lower() for k in config.TED_DIGITAL_KEYWORDS)
 
 
 def matched_cpvs(item: dict) -> list[str]:
     """The CPV codes that actually made this notice a candidate. A notice can
     carry a dozen codes, and the interesting one is rarely the first."""
-    wanted = set(config.TED_CPV_IT_TRAINING) | set(config.TED_CPV_GENERAL_TRAINING)
+    wanted = {code for g in config.TED_GROUPS for code in g["cpv"]}
     return [c for c in item["cpv"] if c in wanted]
 
 
@@ -188,8 +196,8 @@ def format_for_prompt(candidates: list[dict]) -> str:
     for n, c in enumerate(candidates, 1):
         deadline = c["deadline"] or "nincs megadott határidő"
         lines.append(
-            f"  [{n}] {c['publication_number']} · {c['country']} · határidő: {deadline} "
-            f"· képzési CPV: {', '.join(matched_cpvs(c)) or 'n/a'}\n"
+            f"  [{n}] {c['publication_number']} · {c['country']} · határidő: {deadline}\n"
+            f"      kategória: {c.get('group', 'n/a')} · CPV: {', '.join(matched_cpvs(c)) or 'n/a'}\n"
             f"      {c['title']}\n"
             f"      Ajánlatkérő: {c['buyer'] or 'n/a'}\n"
             f"      {c['url']}"

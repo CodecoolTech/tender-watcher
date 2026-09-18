@@ -65,17 +65,29 @@ partnerként is tud pályázni.
 # The goal is to cover the whole European market – in every segment the AI is
 # expected to discover further sources on its own (national, municipal and
 # corporate procurement pages alike).
+#
+# Note on the division of labour: European public procurement now arrives
+# through the TED API (ted_source.py), so these segments are what the model's
+# web searches are FOR – grants, corporate tenders and below-threshold national
+# notices, which TED does not carry.
+#
+# Segments 6-8 were added on 2026-09-17 from the company intro documents: they
+# are service lines Codecool sells but the watcher was not looking for.
 SEARCH_SEGMENTS = [
     "EU-s pályázatok és támogatások – pl. EU Funding & Tenders Portal (Digital Europe, ESF+, Horizon), "
-    "Erasmus+ / EACEA (VET, KA2), Digital Skills and Jobs Platform",
-    "Magyar pályázatok – pl. palyazat.gov.hu / Széchenyi Terv Plusz (DIMOP Plusz, EFOP Plusz), NKFIH",
-    "Európai közbeszerzések, minden országból – pl. TED (ted.europa.eu), és a nemzeti portálok: "
-    "EKR/kozbeszerzes.hu (HU), HILMA (FI), Mercell / Opic (SE/NO/DK), evergabe / DTVP (DE), "
+    "Erasmus+ / EACEA (VET, KA2), Digital Skills and Jobs Platform. Konzorciumi partnert kereső "
+    "felhívások is érdekesek (a Codecool az ESSA-ban is konzorciumi tag volt)",
+    "Magyar pályázatok – pl. palyazat.gov.hu / Széchenyi Terv Plusz (DIMOP Plusz, EFOP Plusz), "
+    "valamint KUTATÁS-FEJLESZTÉSI és innovációs pályázatok: NKFIH, PIACI-KFI, PIACI FÓKUSZ típusú "
+    "kiírások – a Codecoolnak két ilyen futó/lezárt K+F projektje is van (oktatási platform, MI-fejlesztés)",
+    "Európai közbeszerzések, minden országból – a TED-et az API már lefedi, ezért ITT a nemzeti, "
+    "értékhatár alatti portálokra koncentrálj: HILMA (FI), Mercell / Opic (SE/NO/DK), evergabe / DTVP (DE), "
     "BOAMP (FR), ANAC (IT), PLACE (ES), eZamówienia (PL), NEN (CZ), UVO (SK), e-licitatie (RO), "
-    "PPA (görög KIMDIS / promitheus.gov.gr), Contracts Finder / Find a Tender (UK) – és bármely további nemzeti portál",
+    "promitheus.gov.gr (GR), Contracts Finder / Find a Tender (UK) – és bármely további nemzeti portál",
     "Városi / önkormányzati és közintézményi beszerzések – pl. Helsinki (hel.fi hankinnat), "
     "Bécs, Berlin, Amszterdam, Varsó, Budapest beszerzési oldalai, egyetemek, kamarák, "
-    "munkaügyi hivatalok (pl. arbetsförmedlingen, Bundesagentur für Arbeit) képzési tenderei",
+    "munkaügyi hivatalok (pl. arbetsförmedlingen, Bundesagentur für Arbeit) képzési tenderei, "
+    "valamint regionális fejlesztési ügynökségek munkaerőpiaci képzési programjai",
     "Céges / magánszektor tenderek – ezek gyakran 'ajánlattételi felhívás', 'RFP / request for proposal', "
     "'invitation to tender', 'beszállítói pályázat', 'Ausschreibung' címen jelennek meg. Helyek: "
     "nagyvállalatok saját supplier/procurement/hirdetmény oldalai (pl. bankok: UniCredit, Erste, OTP, "
@@ -83,6 +95,22 @@ SEARCH_SEGMENTS = [
     "energetika: MOL, E.ON), publikus e-beszerzési platformok (SAP Ariba Discovery, Jaggaer, Coupa, "
     "tendigo, Mercell privát szekciói), ahol IT-képzést, reskilling/upskilling programot, "
     "digital academy szolgáltatást keresnek beszállítótól",
+    "E-learning tananyagfejlesztés és LMS – digitális tananyag gyártása, e-learning kurzusfejlesztés, "
+    "SCORM-tartalom, oktatóvideó-produkció, tanulásirányítási rendszer (LMS) bevezetése vagy "
+    "tartalommal való feltöltése. Keresd így is: 'e-learning tananyagfejlesztés', 'digitális tananyag "
+    "beszerzés', 'e-learning content development RFP', 'Erstellung von E-Learning-Inhalten', "
+    "'opracowanie materiałów e-learningowych', 'learning management system tender'",
+    "Készségfelmérés és képzési tanácsadás – kompetenciamátrix kidolgozása, skills gap analízis, "
+    "képzési terv és képzési stratégia készítése, digitális érettségfelmérés, megvalósíthatósági "
+    "tanulmány, mikrotanúsítványi rendszer kialakítása. Keresd így is: 'képzési terv kidolgozása "
+    "ajánlatkérés', 'skills gap analysis tender', 'competency framework consultancy', "
+    "'digital maturity assessment RFP'",
+    "IT-toborzás és munkaerő-biztosítás – informatikai szakemberek toborzása, kiválasztása, "
+    "munkaerő-kölcsönzés, valamint toborzást ÉS képzést együtt kérő 'academy' típusú programok. "
+    "Keresd így is: 'IT munkaerő-kölcsönzés közbeszerzés', 'informatikai szakemberek toborzása "
+    "ajánlattételi felhívás', 'IT recruitment services tender', 'Personaldienstleistung IT', "
+    "'rekrutacja specjalistów IT przetarg'. FIGYELEM: csak akkor releváns, ha IT/digitális "
+    "profilú – az általános munkaerő-kölcsönzést (takarítás, ápolás, logisztika) hagyd ki",
 ]
 
 # --- Explicitly monitored sources -------------------------------------------
@@ -231,32 +259,87 @@ LANG_SEGMENTS = {
 # searches are freed up for the segments that have no API.
 TED_API_URL = "https://api.ted.europa.eu/v3/notices/search"
 TED_LOOKBACK_DAYS = 30         # how far back to look for notices
-TED_MAX_CANDIDATES = 40        # how many open notices are handed to the model
+TED_MAX_CANDIDATES = 40        # ceiling on notices handed to the model (= sum of the group quotas)
 TED_MAX_PAGES = 8              # safety stop on paging (100 notices per page)
 
 # Only open opportunities: contract notices, prior information and qualification
 # systems. Award notices (can-*) are already decided, so they are excluded.
 TED_NOTICE_TYPES = ["cn-standard", "cn-social", "pin-only", "qu-sy"]
 
-# CPV codes that ARE digital/IT training – every open notice counts as a candidate.
-TED_CPV_IT_TRAINING = [
-    "80420000",   # e-learning services
-    "80533000",   # computer-user training
-    "80533100",   # computer training services
-    "80533200",   # computer courses
-    "80531200",   # technical training services
+# Candidate families. Each is fetched separately and gets its OWN quota, so the
+# training notices (by far the most numerous) cannot crowd the other service
+# lines out of the list handed to the model. "digital_only" applies the keyword
+# filter below; it is on where the CPV group is broad enough to be full of
+# driving schools and temp nurses.
+TED_GROUPS = [
+    {
+        "key": "kepzes",
+        "label": "IT / digitális képzés",
+        "quota": 22,
+        "digital_only": False,
+        "cpv": [
+            "80420000",   # e-learning services
+            "80533000",   # computer-user training
+            "80533100",   # computer training services
+            "80533200",   # computer courses
+            "80531200",   # technical training services
+        ],
+    },
+    {
+        "key": "kepzes_altalanos",
+        "label": "általános képzés, digitális tartalommal",
+        "quota": 8,
+        "digital_only": True,   # huge volume: fire safety, driving, language courses
+        "cpv": [
+            "80400000",   # adult and other education services
+            "80500000",   # training services
+            "80510000",   # specialist training services
+            "80511000",   # staff training services
+            "80530000",   # vocational training services
+            "80532000",   # management training services
+        ],
+    },
+    {
+        "key": "elearning_szoftver",
+        "label": "oktatási szoftver / LMS / tananyag",
+        "quota": 10,
+        "digital_only": False,  # the CPV group is already specific
+        "cpv": [
+            "48190000",   # educational software package
+            "48931000",   # training software package
+            "72212190",   # educational software development services
+        ],
+    },
 ]
 
-# Broader training CPVs – huge volume (driving schools, fire safety, language
-# courses), so a notice here only counts if its text mentions something digital.
-TED_CPV_GENERAL_TRAINING = [
-    "80400000",   # adult and other education services
-    "80500000",   # training services
-    "80510000",   # specialist training services
-    "80511000",   # staff training services
-    "80530000",   # vocational training services
-    "80532000",   # management training services
-]
+# WITHDRAWN 2026-09-18 – IT recruitment through TED. Codecool does want these
+# tenders, but this was the wrong channel for them: the recruitment CPVs carry
+# ~272 notices a month of overwhelmingly generic staffing, and across two live
+# runs the group handed over 5 then 3 candidates (conflict-management training,
+# a leadership course, generic HR services, a data-entry contract) of which the
+# model kept NONE – it only displaced better candidates from the quota.
+#
+# IT recruitment is still covered: SEARCH_SEGMENTS has a dedicated web-search
+# segment for it, which also reaches the corporate RFPs where such work is
+# usually advertised, and costs no candidate slots.
+#
+# To put it back: drop this block into TED_GROUPS and take the quota from
+# "kepzes". `digital_in_title_only` is still supported in ted_source.py.
+#
+# {
+#     "key": "toborzas",
+#     "label": "IT-toborzás / munkaerő-biztosítás",
+#     "quota": 3,
+#     "digital_only": True,
+#     "digital_in_title_only": True,   # title must say IT; description is too loose
+#     "cpv": [
+#         "79600000",   # recruitment services
+#         "79610000",   # placement services of personnel
+#         "79611000",   # job search services
+#         "79620000",   # supply services of personnel incl. temporary staff
+#         "79634000",   # career guidance services
+#     ],
+# },
 
 # TED titles read "Country - <main CPV label> - <buyer's own title>", and we ask
 # for the Hungarian rendering, so these words in the middle label mark a notice
@@ -267,7 +350,7 @@ TED_TRAINING_TITLE_WORDS = ["képzés", "oktatás", "tanfolyam", "továbbképz",
 # Multilingual – the notice title/description is in the buyer's own language.
 TED_DIGITAL_KEYWORDS = [
     "digital", "digitál", "digitale", "digitalis", "cyfrow", "numérique", "numerique",
-    "informati", "informatyk", "it-", " it ", "ict", "computer", "komputer",
+    "informati", "informatyk", "it-", "-it", "ict", "computer", "komputer",
     "számítógép", "szoftver", "software", "programoz", "programming", "programista",
     "coding", "kódol", "e-learning", "elearning", "online", "webfejleszt", "web development",
     "cyber", "kiber", "cyberbezpiecz", "adatbázis", "database", "cloud", "felhő",
@@ -289,5 +372,11 @@ MAX_SEARCHES = 12              # how many searches the model may run in one pass
                                # wider. Do not raise this without measuring the item count too.
 MAX_TOTAL_RESULTS = 60         # upper bound on all results in one pass (cost / context limit)
                                # 12 searches × 5 results – needed for full market coverage; lower it if too expensive
+
+# Output ceiling for one model reply. Raised from 16000 on 2026-09-17: with 40 TED
+# candidates plus the relevance rubric (every item now carries a justification),
+# a run hit max_tokens mid-JSON and the whole array was lost. Reasoning tokens
+# count against this too, so keep real headroom.
+MAX_OUTPUT_TOKENS = 32000
 
 MIN_RELEVANCE = "med"          # "low" | "med" | "high" – anything below this is not reported in notifications

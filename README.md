@@ -92,13 +92,25 @@ them a Hungarian e-learning tender (585619-2026) and a Norwegian developer
 security training (599109-2026). After the switch the same day returned **17**
 verified open TED tenders.
 
-Two details worth knowing before you touch `config.py`:
+Candidates are fetched per **service line**, each with its own quota
+(`TED_GROUPS`), because training notices outnumber everything else by an order
+of magnitude — a single deadline-ordered list would never reach an e-learning
+platform tender. Current split of the 40 slots: IT/digital training 22, general
+training with digital content 8, educational software / LMS / course material 10.
+
+Three details worth knowing before you touch `config.py`:
 
 - Ranking uses the **notice title**, not the CPV. TED titles read
   `Country – <main CPV label> – <buyer's title>`, and a training CPV such as
   80533100 is routinely bolted onto hardware purchases (medical equipment,
   spectrometers). The middle label is what says the notice is really about
   training. See `TED_TRAINING_TITLE_WORDS`.
+- **A CPV group is only worth a quota if it pays for itself.** IT recruitment was
+  tried and withdrawn on 2026-09-18: across two live runs its candidates were
+  generic HR and staffing work and the model kept none of them, so the slots
+  were pure loss. That service line is covered by a web-search segment instead.
+  The block is kept commented out in `config.py` with the numbers, so it can go
+  back if a later review disagrees.
 - **EKR cannot be covered this way.** Its notice pages are a JavaScript app that
   returns an empty shell to any fetch or crawler, which is why the watcher never
   produced a concrete EKR link. Hungarian above-threshold procedures are

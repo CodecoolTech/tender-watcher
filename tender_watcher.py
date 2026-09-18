@@ -75,11 +75,18 @@ FELADAT: fésüld át a TELJES európai piacot friss (nyitott vagy hamarosan ny�
 lehetőségekért. NEM csak EU-s pályázatok érdekesek – ugyanolyan súllyal keresd a
 közbeszerzéseket (állami, városi/önkormányzati) és a magáncégek beszerzési tendereit is.
 
-Használd a web-search eszközt: összesen kb. {config.MAX_SEARCHES} keresést futtathatsz,
-oszd be úgy, hogy MINDEGYIK alábbi szegmensre jusson (különböző nyelvű és irányú keresések).
-A céges/magánszektor szegmensre fordíts LEGALÁBB 3 keresést – ez a legnehezebben
-megtalálható, de kiemelten fontos kategória. A zárójeles portálnevek csak PÉLDÁK a kiinduláshoz –
-NE korlátozd rájuk a keresést, minden szegmensben derítsd fel magad a további forrásokat:
+Használd a web-search eszközt: összesen kb. {config.MAX_SEARCHES} keresést futtathatsz.
+Nyolc szegmens van, ennél kevesebb keresésed – tehát NE oszd el egyenletesen, hanem
+prioritás szerint. A keresés az, amit a TED API NEM fed le, ezért:
+  - ELŐSZÖR (kb. 5 keresés): céges/magánszektor tenderek (5.) – ez a legnehezebben
+    megtalálható, de kiemelten fontos kategória –, valamint EU-s és magyar pályázatok (1., 2.).
+  - UTÁNA (kb. 4 keresés): a három új szolgáltatási ág, amire eddig nem kerestünk:
+    e-learning tananyagfejlesztés és LMS (6.), készségfelmérés és képzési tanácsadás (7.),
+    IT-toborzás és munkaerő-biztosítás (8.). Legalább egy-egy keresés jusson mindháromra.
+  - VÉGÜL (a maradék): nemzeti értékhatár alatti portálok (3.) és városi/önkormányzati
+    beszerzések (4.).
+A zárójeles portálnevek csak PÉLDÁK a kiinduláshoz – NE korlátozd rájuk a keresést,
+minden szegmensben derítsd fel magad a további forrásokat:
 {segments}
 
 KÖTELEZŐEN FIGYELENDŐ FORRÁSOK – ezeket MINDEN futásban nézd át (pl. site: szűkítéssel):
@@ -162,6 +169,10 @@ Szabályok:
   - Törekedj arra, hogy a találatok több országból és több szegmensből (pályázat,
     közbeszerzés, céges tender) származzanak, ne csak egy-két portálról.
 
+A JSON elé LEGFELJEBB 3 mondat összefoglalót írj – a kimeneti kereted véges, és a
+JSON a fontos, nem a bevezető próza. Az egyes tételek "summary" mezője is maradjon
+1-2 mondat.
+
 A válaszod VÉGÉN adj vissza KIZÁRÓLAG egy JSON-tömböt (```json blokkban), ilyen mezőkkel:
 [
   {{
@@ -213,7 +224,7 @@ def fetch_opportunities(api_key: str) -> list[dict]:
     body = {
         "model": config.MODEL,
         "messages": [{"role": "user", "content": build_prompt(ted_source.fetch_candidates())}],
-        "max_tokens": 16000,
+        "max_tokens": config.MAX_OUTPUT_TOKENS,
         "tools": [{
             "type": "openrouter:web_search",
             "parameters": {
@@ -283,22 +294,50 @@ def error_reason(resp: requests.Response) -> str:
 
 
 def describe_key(api_key: str) -> str:
-    """Ask OpenRouter about the key itself. This is what separates a spend-limit
-    403 ('key limit exceeded') from a moderation / permission 403."""
+    """Ask OpenRouter about the key AND the account balance behind it.
+
+    Both are needed, and the difference bites: on 2026-09-17 a run died on HTTP
+    402 while the key still showed limit_remaining=$44.53. The key's monthly cap
+    was fine; the account had $0.01 of credit left. Reporting only the key made
+    the run log look like the key was healthy."""
+    parts = []
     try:
         resp = requests.get(
             f"{config.OPENROUTER_BASE_URL}/key",
             headers={"Authorization": f"Bearer {api_key}"},
             timeout=30,
         )
+        if resp.status_code == 200:
+            d = (resp.json() or {}).get("data") or {}
+            parts.append(f"key: label={d.get('label')!r} usage=${d.get('usage')} "
+                         f"monthly_limit={d.get('limit')} limit_remaining={d.get('limit_remaining')} "
+                         f"free_tier={d.get('is_free_tier')}")
+        else:
+            parts.append(f"key lookup returned HTTP {resp.status_code}: {resp.text[:200]}")
     except requests.RequestException as exc:
-        return f"the key lookup itself failed: {exc}"
+        parts.append(f"key lookup failed: {exc}")
+    parts.append(describe_balance(api_key))
+    return " | ".join(parts)
+
+
+def describe_balance(api_key: str) -> str:
+    """Account credit left. This – not the key's monthly limit – is what an
+    HTTP 402 is actually about."""
+    try:
+        resp = requests.get(
+            "https://openrouter.ai/api/v1/credits",
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=30,
+        )
+    except requests.RequestException as exc:
+        return f"balance lookup failed: {exc}"
     if resp.status_code != 200:
-        return f"the key lookup returned HTTP {resp.status_code}: {resp.text[:300]}"
+        return f"balance lookup returned HTTP {resp.status_code}"
     d = (resp.json() or {}).get("data") or {}
-    return (f"label={d.get('label')!r} usage=${d.get('usage')} limit={d.get('limit')} "
-            f"limit_remaining={d.get('limit_remaining')} "
-            f"free_tier={d.get('is_free_tier')} rate_limit={d.get('rate_limit')}")
+    total, used = d.get("total_credits") or 0, d.get("total_usage") or 0
+    left = total - used
+    flag = "  <-- OUT OF CREDIT, top up the account" if left < 2 else ""
+    return f"ACCOUNT BALANCE: ${left:.2f} left (${total:.2f} topped up, ${used:.2f} used){flag}"
 
 
 def report_api_error(resp: requests.Response, api_key: str) -> None:
@@ -309,7 +348,11 @@ def report_api_error(resp: requests.Response, api_key: str) -> None:
     print(f"  reason: {error_reason(resp)}")
     print(f"  model: {config.MODEL}")
     if resp.status_code in (401, 402, 403):
-        print(f"  key status: {describe_key(api_key)}")
+        print(f"  {describe_key(api_key)}")
+    if resp.status_code == 402:
+        print("  402 = the ACCOUNT ran out of credit. The key's monthly limit can still look")
+        print("  healthy – check the ACCOUNT BALANCE line above, and top up at")
+        print("  https://openrouter.ai/settings/credits")
     if resp.status_code == 403:
         print("  403 on OpenRouter = insufficient permission, guardrail block or moderation flag.")
         print("  Check in order: spend limit on the key (openrouter.ai/keys), the account's")
@@ -363,7 +406,48 @@ def parse_json_array(text: str) -> list[dict]:
                 return [d for d in data if isinstance(d, dict) and d.get("url")]
         except json.JSONDecodeError:
             continue
-    return []
+    # Nothing parsed as a whole. The usual cause is the reply hitting max_tokens
+    # mid-array, which used to throw away every result in it – so salvage the
+    # objects that did come through complete.
+    return salvage_objects(text)
+
+
+def salvage_objects(text: str) -> list[dict]:
+    """Pull the complete {...} objects out of a truncated JSON array."""
+    start = text.find("[")
+    if start < 0:
+        return []
+    items, depth, obj_start, in_str, escaped = [], 0, None, False, False
+    for pos in range(start, len(text)):
+        ch = text[pos]
+        if in_str:
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            if depth == 0:
+                obj_start = pos
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and obj_start is not None:
+                try:
+                    obj = json.loads(text[obj_start:pos + 1])
+                except json.JSONDecodeError:
+                    pass
+                else:
+                    if isinstance(obj, dict) and obj.get("url"):
+                        items.append(obj)
+                obj_start = None
+    if items:
+        print(f"Truncated model reply – salvaged {len(items)} complete item(s) from it.")
+    return items
 
 
 # --------------------------------------------------------------------------- #
