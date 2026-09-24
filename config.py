@@ -66,20 +66,25 @@ partnerként is tud pályázni.
 # expected to discover further sources on its own (national, municipal and
 # corporate procurement pages alike).
 #
-# Note on the division of labour: European public procurement now arrives
-# through the TED API (ted_source.py), so these segments are what the model's
-# web searches are FOR – grants, corporate tenders and below-threshold national
-# notices, which TED does not carry.
+# Note on the division of labour: European public procurement arrives through
+# the TED API (ted_source.py), EU grant topics through the Funding & Tenders
+# Portal API (ft_portal_source.py) and published Hungarian calls through the
+# palyazat.gov.hu API (palyazat_source.py). These segments are what the model's
+# web searches are FOR – everything those three do not carry.
 #
 # Segments 6-8 were added on 2026-09-17 from the company intro documents: they
 # are service lines Codecool sells but the watcher was not looking for.
 SEARCH_SEGMENTS = [
-    "EU-s pályázatok és támogatások – pl. EU Funding & Tenders Portal (Digital Europe, ESF+, Horizon), "
-    "Erasmus+ / EACEA (VET, KA2), Digital Skills and Jobs Platform. Konzorciumi partnert kereső "
+    "EU-s pályázatok és támogatások – a Funding & Tenders Portal topicjait az API már lefedi, ezért ITT "
+    "az azon KÍVÜLI forrásokat keresd: Erasmus+ nemzeti irodák (Tempus Közalapítvány) által kezelt KA1/KA2 "
+    "felhívások, EIT (EIT Digital, EIT Deep Tech Talent), Digital Skills and Jobs Platform, EU-s projektek "
+    "saját nyílt pályázatai (cascade funding / FSTP), Interreg. Konzorciumi partnert kereső "
     "felhívások is érdekesek (a Codecool az ESSA-ban is konzorciumi tag volt)",
-    "Magyar pályázatok – pl. palyazat.gov.hu / Széchenyi Terv Plusz (DIMOP Plusz, EFOP Plusz), "
-    "valamint KUTATÁS-FEJLESZTÉSI és innovációs pályázatok: NKFIH, PIACI-KFI, PIACI FÓKUSZ típusú "
-    "kiírások – a Codecoolnak két ilyen futó/lezárt K+F projektje is van (oktatási platform, MI-fejlesztés)",
+    "Magyar pályázatok – a palyazat.gov.hu MEGJELENT felhívásait az API már lefedi, ezért ITT: a "
+    "társadalmi egyeztetésen lévő, még meg nem jelent felhívás-tervezetek (pl. DIMOP Plusz, GINOP Plusz), "
+    "valamint KUTATÁS-FEJLESZTÉSI és innovációs pályázatok az NKFIH saját oldalán (nkfih.gov.hu): PIACI-KFI, "
+    "PIACI FÓKUSZ típusú kiírások – a Codecoolnak két ilyen futó/lezárt K+F projektje is van "
+    "(oktatási platform, MI-fejlesztés)",
     "Európai közbeszerzések, minden országból – a TED-et az API már lefedi, ezért ITT a nemzeti, "
     "értékhatár alatti portálokra koncentrálj: HILMA (FI), Mercell / Opic (SE/NO/DK), evergabe / DTVP (DE), "
     "BOAMP (FR), ANAC (IT), PLACE (ES), eZamówienia (PL), NEN (CZ), UVO (SK), e-licitatie (RO), "
@@ -154,6 +159,15 @@ MONITORED_SOURCES = [
         "url": "https://platformazakupowa.pl/",
         # No API, and robots.txt asks for a 900 s crawl delay – search only.
         "item_hint": "egy konkrét transakcja oldala (platformazakupowa.pl/transakcja/<szám>)",
+    },
+    {
+        "name": "palyazat.gov.hu – társadalmi egyeztetésen lévő felhívás-tervezetek (HU)",
+        "url": "https://www.palyazat.gov.hu/palyazatok/tarsadalmi-egyeztetes",
+        # The published calls come through the API (palyazat_source.py); drafts do
+        # not, and a draft is the earliest signal of a call – DIMOP_PLUSZ-5.1.2/B-26
+        # sat here while consultants were already advertising it.
+        "item_hint": "egy konkrét tervezet témaoldala (…/tarsadalmi-egyeztetes?…&topic=<felhívás-kód>…); "
+                     "a summary-ben jelezd, hogy TERVEZET, még nem megjelent felhívás",
     },
     {
         "name": "HADEA – Digital Europe call-bejelentések (EU)",
@@ -406,6 +420,76 @@ EZAM_EXTRA_KEYWORDS = [
     "informatyczn", "cyfrow", "komputerow", "programowani", "oprogramowani",
     "cyberbezpiecz", "sieci", "chmur", "sztucznej inteligencji", "e-usług",
     "szkolenia it", "kompetencji cyfrowych", "system informatyczny",
+]
+
+# --- EU Funding & Tenders Portal direct API -----------------------------------
+# EU grant calls (Horizon Europe, EIC, Eurostars, Digital Europe / ECCC,
+# Erasmus+, ESF+ …), queried instead of searched. See ft_portal_source.py for the
+# 2026-09-23 finding that made this necessary.
+FT_API_URL = "https://api.tech.ec.europa.eu/search-api/prod/rest/search"
+FT_MAX_PAGES = 20              # ~1300 open + forthcoming topics, 100 per page
+FT_MAX_CANDIDATES = 25         # measured 2026-09-23: 61 relevant, the named calls all in the top 20
+
+# Only these programmes are looked at. Horizon Europe alone has 400+ open topics,
+# overwhelmingly outside Codecool's field, so only its digital, social and
+# SME-innovation strands are in.
+FT_PROGRAMME_PATTERNS = [
+    r"^DIGITAL-",                 # Digital Europe, incl. DIGITAL-ECCC (cybersecurity) and Chips JU skills
+    r"^HORIZON-EIC-",             # EIC Accelerator, Pathfinder, STEP
+    r"^HORIZON-EIE-",             # Eurostars (INNOVSMES), Startup Europe
+    r"^HORIZON-CL4-.*DIGITAL",    # Cluster 4 digital & emerging tech (e.g. DIGITAL-EMERGING-52, human/AI workforce)
+    r"^HORIZON-CL2-.*TRANSFO",    # Cluster 2 social transformations: skills, learning, labour market
+    r"^ERASMUS-", r"^ESF-", r"^SOCPL-", r"^CERV-",
+]
+
+# Always handed over, whatever the keyword score: the calls Codecool can apply
+# to as an SME with its own R&D (EIC Accelerator, Eurostars), and the
+# digital-skills lines of Digital Europe.
+FT_PRIORITY_PATTERNS = [
+    r"EIC-\d{4}-ACCELERATOR", r"INNOVSMES", r"BOOSTINGDIGIT", r"-SKILLS-",
+    r"DEPLOY-CYBER-\d+-EULEG",
+]
+
+FT_MUST_REPORT_PATTERNS = [
+    r"EIC-\d{4}-ACCELERATOR",    # EIC Accelerator
+    r"INNOVSMES",                # Eurostars
+    r"DEPLOY-CYBER-\d+-EULEG",   # ECCC: EU cybersecurity legislation capacities
+    r"BOOSTINGDIGIT",            # EU Code Week grants
+]
+
+FT_KEYWORDS = [
+    "skill", "training", "reskill", "upskill", "education", "learning", "curricul",
+    "workforce", "talent", "academy", "competenc", "cyber", "coding", "digital literacy",
+    "edtech", "bootcamp", "artificial intelligence", " ai ", "sme",
+]
+
+# Student and researcher mobility: the Digital Europe skills projects run dozens
+# of these as cascade calls, and Codecool can apply to none of them.
+FT_EXCLUDE_WORDS = [
+    "scholarship", "internship", "fellowship", "phd", "doctoral", "msca",
+    "summer school", "master",
+]
+
+# --- palyazat.gov.hu direct API -----------------------------------------------
+# Hungarian grant calls (DIMOP Plusz, GINOP Plusz, EFOP Plusz, NKFIA …). See
+# palyazat_source.py for the API and for what it does not cover.
+PALYAZAT_API_URL = "https://ginapp-api.fair.gov.hu"
+PALYAZAT_MAX_PAGES = 5         # only ~80 calls are not yet closed; they come first
+PALYAZAT_MAX_CANDIDATES = 12
+
+# Title words of the financial-intermediary "technical" calls and loan / equity
+# schemes – on 2026-09-23 they were 25 of the 55 active calls, and none is
+# something Codecool would apply to.
+PALYAZAT_EXCLUDE_WORDS = [
+    "hvsz", "közvetítők költségtérítése", "technikai felhívás", "hitelkeret",
+    "kombinált keret", "hitelprogram", "hitelkonstrukció", "kockázati tőke",
+]
+
+PALYAZAT_KEYWORDS = [
+    "digitális", "digitalizáció", "informatik", "ikt ", "ikt-", "szoftver", "kiberbiztonság",
+    "mesterséges intelligencia", "képzés", "felnőttképzés", "oktatás",
+    "kompetencia", "készség", "foglalkoztat", "munkaerő", "munkavállaló",
+    "k+f", "kfi", "kutatás-fejlesztés", "innováci", "startup",
 ]
 
 # --- OpenRouter / model / run settings ---------------------------------------

@@ -33,6 +33,8 @@ import requests
 
 import config
 import ezamowienia_source
+import ft_portal_source
+import palyazat_source
 import ted_source
 
 ROOT = Path(__file__).parent
@@ -54,11 +56,12 @@ RETRY_ATTEMPTS = 3
 # --------------------------------------------------------------------------- #
 # 1. Search through OpenRouter (openrouter:web_search server tool)
 # --------------------------------------------------------------------------- #
-def build_prompt(ted_candidates: list[dict]) -> str:
+def build_prompt(ted_candidates: list[dict], grant_candidates: list[dict] = ()) -> str:
     """Build the model prompt. Kept in Hungarian on purpose: the company profile
     and the search segments in config.py are written in Hungarian as well.
 
-    `ted_candidates` are open TED notices fetched straight from the API - the
+    `ted_candidates` are open procurement notices and `grant_candidates` open
+    EU / Hungarian grant calls, both fetched straight from official APIs - the
     model does not have to search for them, only to judge their relevance."""
     segments = "\n".join(f"  {n}. {s}" for n, s in enumerate(config.SEARCH_SEGMENTS, 1))
     sources = "\n".join(
@@ -67,6 +70,7 @@ def build_prompt(ted_candidates: list[dict]) -> str:
     )
     today = dt.date.today().isoformat()
     ted_block = _ted_prompt_block(ted_candidates)
+    grant_block = _grant_prompt_block(grant_candidates)
     return f"""Ma {today} van. Te a Codecool pályázat- és tenderfigyelője vagy.
 
 CÉGPROFIL:
@@ -99,7 +103,7 @@ listaoldalon vagy hírben több kiírást látsz, mindegyikre futtass külön c�
 "site:ted.europa.eu notice IT training", "site:ekr.gov.hu EKR képzés eljárás"),
 és a megtalált KONKRÉT oldalakat vedd fel külön tételként.
 
-{ted_block}
+{ted_block}{grant_block}
 Keresési tippek:
   - Keress helyi nyelveken is, pl.: "tarjouspyyntö koulutus", "Ausschreibung IT-Schulung",
     "appel d'offres formation numérique", "przetarg szkolenia IT", "διαγωνισμός κατάρτιση",
@@ -211,7 +215,7 @@ Mit kezdj velük:
     ne magyarázkodj miattuk.
   - Mivel a TED-et és a lengyel e-Zamówieniát így már lefedtük, a web-search kereséseidet
     a TÖBBI szegmensre fordítsd:
-    EU-s és magyar pályázatok, városi/önkormányzati beszerzések, és kiemelten a
+    az API-kon kívüli EU-s és magyar pályázatok, városi/önkormányzati beszerzések, és kiemelten a
     céges/magánszektor tenderek.
 
 """
@@ -232,12 +236,68 @@ def format_candidates(candidates: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def collect_candidates() -> list[dict]:
-    """Everything the official APIs can give us, before the model sees anything."""
-    return ted_source.fetch_candidates() + ezamowienia_source.fetch_candidates()
+def _grant_prompt_block(candidates: list[dict]) -> str:
+    """The grant calls from the Funding & Tenders Portal and palyazat.gov.hu.
+    Kept apart from the procurement block: they are filed as "eu" / "hu", and
+    what makes one relevant is eligibility, not a buyer's specification."""
+    if not candidates:
+        return ""
+    listing = format_grant_candidates(candidates)
+    return f"""
+NYITOTT PÁLYÁZATOK ({len(candidates)} db) – ezeket is KÉSZEN KAPOD hivatalos API-kból
+(EU Funding & Tenders Portal, illetve palyazat.gov.hu), NEM kell rájuk keresned. Mind nyitott
+vagy hamarosan nyíló, jövőbeli határidővel:
+{listing}
+
+Mit kezdj velük:
+  - Nézd át MINDET, és amelyikre a Codecool pályázhat – önállóan, KKV-ként (pl. EIC Accelerator,
+    Eurostars, DIMOP K+F), vagy konzorciumi partnerként képzési / tananyag- / készségfelmérési
+    munkacsomaggal (pl. Digital Europe SKILLS, ECCC kiberbiztonsági képzés, Horizon munkaerő-
+    és tanulási témák) –, azt vedd fel a végső JSON-be: "eu" kategóriával az EU-s, "hu"
+    kategóriával a magyar tételeket, PONTOSAN a fenti URL-lel és határidővel.
+  - A [KÖTELEZŐ] jelölésű tételeket MINDENKÉPP vedd fel (legalább "med" besorolással) – ezek
+    a cég figyelendő pályázati listáján vannak, ezért akkor is kellenek, ha a Codecool csak
+    partnerként vagy korlátozottan tudna indulni. Ilyenkor a summary-ben ezt írd le.
+  - A summary-ben írd le, MILYEN SZEREPBEN pályázhatna a Codecool (fővállalkozó / KKV-pályázó /
+    konzorciumi partner), mert a pályázatoknál ez dönti el a relevanciát.
+  - Hagyd ki, amire a Codecool nem jogosult (pl. csak állami szerv, csak kutatóintézet, csak
+    önkormányzat pályázhat), vagy aminek a témája csak érintőleges (pl. chiptervezés, egészségügyi
+    képalkotás) – ne magyarázkodj miattuk.
+  - Mivel ezeket a portálokat így már lefedtük, az 1. és 2. szegmensben csak az azokon KÍVÜLI
+    forrásokat keresd.
+
+"""
+
+
+def format_grant_candidates(candidates: list[dict]) -> str:
+    lines = []
+    for n, c in enumerate(candidates, 1):
+        status = f" · {c['status']}" if c.get("status") else ""
+        upcoming = c.get("opens", "") > dt.date.today().isoformat()
+        opens = f" · nyílik: {c['opens']}" if upcoming else ""
+        must = " [KÖTELEZŐ]" if c.get("must_report") else ""
+        lines.append(
+            f"  [{n}]{must} {c['publication_number']} · {c.get('programme') or 'n/a'}{status}"
+            f" · határidő: {c.get('deadline_text') or c['deadline']}{opens}\n"
+            f"      {c['title']}" + (f" ({c['call_title']})" if c.get("call_title") else "") + "\n"
+            + (f"      Keret: {c['budget']}\n" if c.get("budget") else "")
+            + (f"      Pályázhat: {c['beneficiaries']}\n" if c.get("beneficiaries") else "")
+            + (f"      {c['description'][:300]}\n" if c.get("description") else "")
+            + f"      {c['url']}"
+        )
+    return "\n".join(lines)
+
+
+def collect_candidates() -> tuple[list[dict], list[dict]]:
+    """Everything the official APIs can give us, before the model sees anything:
+    (procurement notices, grant calls)."""
+    procurement = ted_source.fetch_candidates() + ezamowienia_source.fetch_candidates()
+    grants = ft_portal_source.fetch_candidates() + palyazat_source.fetch_candidates()
+    return procurement, grants
 
 
 def fetch_opportunities(api_key: str) -> list[dict]:
+    procurement, grants = collect_candidates()
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -246,7 +306,7 @@ def fetch_opportunities(api_key: str) -> list[dict]:
     }
     body = {
         "model": config.MODEL,
-        "messages": [{"role": "user", "content": build_prompt(collect_candidates())}],
+        "messages": [{"role": "user", "content": build_prompt(procurement, grants)}],
         "max_tokens": config.MAX_OUTPUT_TOKENS,
         "tools": [{
             "type": "openrouter:web_search",
@@ -271,7 +331,34 @@ def fetch_opportunities(api_key: str) -> list[dict]:
         text = "".join(part.get("text", "") for part in content if isinstance(part, dict))
     else:
         text = content or ""
-    return filter_items(parse_json_array(text), "model results")
+    items = filter_items(parse_json_array(text), "model results")
+    return add_missing_must_report(items, grants)
+
+
+def add_missing_must_report(items: list[dict], grants: list[dict]) -> list[dict]:
+    reported = {normalized_url(i.get("url", "")) for i in items}
+    added = []
+    for c in grants:
+        if not c.get("must_report") or normalized_url(c["url"]) in reported:
+            continue
+        title = c["title"] + (f" ({c['publication_number']})" if c["publication_number"] not in c["title"] else "")
+        added.append({
+            "title": title,
+            "url": c["url"],
+            "category": c.get("category", "eu"),
+            "program": c.get("call_title") or c.get("programme", ""),
+            "budget": c.get("budget", ""),
+            "deadline": c["deadline"],
+            "deadline_text": c.get("deadline_text") or c["deadline"],
+            "relevance": "med",
+            "summary": "Kiemelt felhívás (a figyelendő pályázatok listájáról) – automatikusan felvéve, "
+                       "mert a modell nem sorolta be. A jogosultságot és a Codecool szerepét "
+                       "(KKV-pályázó / konzorciumi partner) a felhívás oldalán ellenőrizd.",
+        })
+    if added:
+        print(f"Must-report calls the model left out, added back: "
+              f"{', '.join(a['title'] for a in added)}")
+    return items + added
 
 
 def post_with_retry(headers: dict, body: dict) -> requests.Response:

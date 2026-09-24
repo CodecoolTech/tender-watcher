@@ -17,6 +17,9 @@ search is performed by OpenRouter's `openrouter:web_search` server tool.
 ```
 tender_watcher.py           # the weekly run logic + link quality filter
 ted_source.py               # TED notices straight from the official API (not web search)
+ezamowienia_source.py       # Polish procurement notices from the e-Zamówienia API
+ft_portal_source.py         # EU grant calls from the Funding & Tenders Portal API
+palyazat_source.py          # Hungarian grant calls from the palyazat.gov.hu API
 config.py                   # company profile + monitored sources + filter rules + model/settings
 requirements.txt            # Python dependencies
 .github/workflows/tender-watcher.yml   # weekly schedule (Monday 06:00 UTC = 08:00 Budapest)
@@ -80,14 +83,16 @@ After that it runs by itself every **Monday morning**.
 
 ## Where the opportunities come from
 
-Two official APIs are queried directly, and the model's web searches cover what
+Four official APIs are queried directly, and the model's web searches cover what
 has no API:
 
 | Source | Module | What it adds |
 |---|---|---|
 | TED | `ted_source.py` | EU-wide procurement above the EU threshold |
 | e-Zamówienia (PL) | `ezamowienia_source.py` | Polish procurement, mostly **below** the EU threshold — invisible to TED |
-| everything else | web search | grants, corporate RFPs, below-threshold notices elsewhere |
+| EU Funding & Tenders Portal | `ft_portal_source.py` | EU grant calls: Horizon Europe (EIC, Eurostars, Cluster 2/4), Digital Europe incl. ECCC, Erasmus+, ESF+ |
+| palyazat.gov.hu | `palyazat_source.py` | published Hungarian calls: DIMOP Plusz, GINOP Plusz, EFOP Plusz … |
+| everything else | web search | corporate RFPs, below-threshold notices elsewhere, grants outside the two portals, Hungarian draft calls |
 
 Poland gets its own module because it is a real market for Codecool and
 practically every open Polish training notice is below the EU threshold, so TED
@@ -178,8 +183,8 @@ python tender_watcher.py --prune
 
 - **Focus / keywords / target countries:** `config.py` → `COMPANY_PROFILE`.
 - **Monitored sources:** `config.py` → `MONITORED_SOURCES` – portals that must be
-  checked on *every* run (EKR, TED, tendigo Weiterbildung, HADEA Digital Europe
-  call announcements). These are entry points, not results: the watcher drills
+  checked on *every* run (EKR, TED, tendigo Weiterbildung, the Polish portals,
+  palyazat.gov.hu draft calls, HADEA Digital Europe call announcements). These are entry points, not results: the watcher drills
   down from them to the individual call, and the landing pages themselves are
   rejected by the link filter.
 - **Search segments:** `config.py` → `SEARCH_SEGMENTS` (extendable; corporate
