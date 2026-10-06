@@ -32,6 +32,7 @@ from urllib.parse import SplitResult, urlsplit
 import requests
 
 import config
+import ekr_source
 import ezamowienia_source
 import ft_portal_source
 import palyazat_source
@@ -291,7 +292,9 @@ def format_grant_candidates(candidates: list[dict]) -> str:
 def collect_candidates() -> tuple[list[dict], list[dict]]:
     """Everything the official APIs can give us, before the model sees anything:
     (procurement notices, grant calls)."""
-    procurement = ted_source.fetch_candidates() + ezamowienia_source.fetch_candidates()
+    ted = ted_source.fetch_candidates()
+    on_ted = {c["publication_number"].lstrip("0") for c in ted}
+    procurement = ted + ekr_source.fetch_candidates(on_ted) + ezamowienia_source.fetch_candidates()
     grants = ft_portal_source.fetch_candidates() + palyazat_source.fetch_candidates()
     return procurement, grants
 

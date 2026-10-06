@@ -422,6 +422,21 @@ EZAM_EXTRA_KEYWORDS = [
     "szkolenia it", "kompetencji cyfrowych", "system informatyczny",
 ]
 
+# --- EKR (HU) direct API --------------------------------------------------------
+# Hungarian public procurement, above all the NATIONAL (below-EU-threshold)
+# procedures that never reach TED – measured 2026-10-06: of 374 open EKR notices,
+# 159 had no TED id. See ekr_source.py for the endpoint and why the CPV codes are
+# matched by full-text search instead of the portal's own CPV filter.
+EKR_API_URL = "https://ekr.gov.hu/api/publikus/kozbeszerzesi-hirdetmenyek"
+EKR_LOOKBACK_DAYS = 30
+EKR_MAX_CANDIDATES = 10        # how many Hungarian EKR procedures are handed to the model
+EKR_MAX_PAGES = 5              # 100 notices per page; a single CPV code yields a handful
+
+# Only notices that open a tender: the call for tenders itself. Result notices,
+# corrections and amendments of the same procedure are left out.
+EKR_NOTICE_TYPE_WORDS = ["ajánlati / részvételi felhívás", "eljárást megindító felhívás",
+                         "szociális és egyéb meghatározott szolgáltatások"]
+
 # --- EU Funding & Tenders Portal direct API -----------------------------------
 # EU grant calls (Horizon Europe, EIC, Eurostars, Digital Europe / ECCC,
 # Erasmus+, ESF+ …), queried instead of searched. See ft_portal_source.py for the
@@ -437,6 +452,7 @@ FT_PROGRAMME_PATTERNS = [
     r"^DIGITAL-",                 # Digital Europe, incl. DIGITAL-ECCC (cybersecurity) and Chips JU skills
     r"^HORIZON-EIC-",             # EIC Accelerator, Pathfinder, STEP
     r"^HORIZON-EIE-",             # Eurostars (INNOVSMES), Startup Europe
+    r"^HORIZON-EIT-",   # EIT cascade hívások; a relevanciát a modell dönti el.
     r"^HORIZON-CL4-.*DIGITAL",    # Cluster 4 digital & emerging tech (e.g. DIGITAL-EMERGING-52, human/AI workforce)
     r"^HORIZON-CL2-.*TRANSFO",    # Cluster 2 social transformations: skills, learning, labour market
     r"^ERASMUS-", r"^ESF-", r"^SOCPL-", r"^CERV-",
@@ -455,6 +471,7 @@ FT_MUST_REPORT_PATTERNS = [
     r"INNOVSMES",                # Eurostars
     r"DEPLOY-CYBER-\d+-EULEG",   # ECCC: EU cybersecurity legislation capacities
     r"BOOSTINGDIGIT",            # EU Code Week grants
+    r"DIGITAL-EMERGING-52",   # Horizon CL4: Human/AI collaboration for the workforce – a pipeline-ban van
 ]
 
 FT_KEYWORDS = [
